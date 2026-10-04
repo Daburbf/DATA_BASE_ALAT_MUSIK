@@ -10,7 +10,7 @@
         "dotenv": "^16.4.0",
         "express": "^5.0.0",
         "jsonwebtoken": "^9.0.2",
-        "pg": "^8.13.0",
+        "pg": "^8.13.0"
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -20,9 +20,9 @@
         "@types/node": "^22.0.0",
         "@types/pg": "^8.11.0",
         "tsx": "^4.19.0",
-        "typescript": "^5.7.0",
-      },
-    },
+        "typescript": "^5.7.0"
+      }
+    }
   },
   "packages": {
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.28.2", "", { "os": "aix", "cpu": "ppc64" }, "sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ=="],
@@ -353,6 +353,6 @@
 
     "@types/serve-static/@types/node/undici-types": ["undici-types@8.9.0", "", {}, "sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg=="],
 
-    "bun-types/@types/node/undici-types": ["undici-types@8.9.0", "", {}, "sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg=="],
+    "bun-types/@types/node/undici-types": ["undici-types@8.9.0", "", {}, "sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg=="]
   }
 }
