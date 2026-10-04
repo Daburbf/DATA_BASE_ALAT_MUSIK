@@ -1,9 +1,4 @@
--- Hapus akun pelanggan (self-service & admin).
--- Dipakai endpoint DELETE /auth/me (pelanggan menghapus akunnya sendiri)
--- dan DELETE /auth/pelanggan/:id (admin menghapus akun pelanggan mana pun).
--- Aturan: akun yang masih memiliki riwayat pembelian TIDAK boleh dihapus
--- (menjaga integritas laporan), sejajar dengan trigger trg_cegah_hapus_alat_terjual.
-
+--auth
 CREATE OR REPLACE PROCEDURE sp_hapus_pelanggan(
     p_pelanggan_id INT,
     p_akun_id INT,
@@ -15,7 +10,7 @@ SET search_path = public, pg_temp
 AS $$
 BEGIN
     IF p_role = 'pelanggan' THEN
-        -- Pelanggan hanya boleh menghapus akun miliknya sendiri.
+        --auth
         IF p_pelanggan_id <> p_akun_id THEN
             RAISE EXCEPTION 'Anda hanya dapat menghapus akun milik sendiri' USING ERRCODE = 'TM403';
         END IF;

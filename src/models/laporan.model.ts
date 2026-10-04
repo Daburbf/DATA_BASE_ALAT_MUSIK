@@ -18,7 +18,7 @@ export interface LogAktivitas {
   created_at: Date;
 }
 
-// Baris dari v_pendapatan_per_kategori.
+//laporan
 export interface PendapatanPerKategori {
   kategori_id: number;
   nama_kategori: string;
@@ -27,7 +27,7 @@ export interface PendapatanPerKategori {
   total_pendapatan: number;
 }
 
-// Baris dari v_penjualan_per_bulan.
+//laporan
 export interface PenjualanPerBulan {
   tahun: number;
   bulan: number;

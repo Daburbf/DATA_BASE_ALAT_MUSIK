@@ -36,7 +36,7 @@ export interface LoginResult {
   };
 }
 
-// Baris dari v_daftar_admin.
+//auth
 export interface DaftarAdmin {
   admin_id: number;
   nama: string;
@@ -44,7 +44,7 @@ export interface DaftarAdmin {
   created_at: Date;
 }
 
-// Baris dari v_daftar_pelanggan.
+//auth
 export interface DaftarPelanggan {
   pelanggan_id: number;
   nama: string;

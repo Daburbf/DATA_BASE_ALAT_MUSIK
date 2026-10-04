@@ -1,0 +1,546 @@
+================================================================================
+PRESENTASI: REST API TOKO ALAT MUSIK (Node.js + TypeScript + Express 5 + PostgreSQL)
+Struktur presentasi + cara-cara + alasan tiap pilihan + bank pertanyaan dosen
+================================================================================
+Cara pakai file ini:
+1. Bagian A = urutan slide/bicaraan (total ±15 menit).
+2. Bagian B = cara demo live tanpa gagal (urutan klik Postman + SQLTools).
+3. Bagian C = alasan tiap pilihan teknologi/arsitektur (ini yang paling sering ditanya).
+4. Bagian D = bank pertanyaan yang hampir pasti keluar + jawaban pendek + file bukti.
+5. Bagian E = checklist H-1 dan hari-H.
+
+================================================================================
+BAGIAN A — STRUKTUR PRESENTASI (12 SLIDE / ±15 MENIT)
+================================================================================
+
+SLIDE 1 — JUDUL (1 menit)
+- Judul: "REST API Toko Alat Musik"
+- Stack: Node.js + TypeScript (tsx), Express 5, PostgreSQL lokal (tanpa Docker)
+- Peran: Admin (kelola katalog/stok/laporan) dan Pelanggan (checkout + riwayat)
+- Prefix API: /api/v1 — respons seragam { success, message?, data? }
+- Kalimat pembuka contoh:
+  "Aplikasi ini REST API untuk toko alat musik dengan dua peran. Semua aturan
+   bisnis penting — validasi stok, hitung total, alur status, audit — dijalankan
+   di database lewat function, procedure, trigger, dan view. Lapisan aplikasi
+   hanya validasi input, panggil objek database, dan petakan error ke HTTP."
+
+SLIDE 2 — LATAR BELAKANG & TUJUAN (1 menit)
+- Masalah: pencatatan manual rawan salah stok/harga; butuh API yang konsisten.
+- Tujuan: (1) katalog + stok akurat, (2) checkout atomik, (3) status terkontrol,
+  (4) laporan hanya dari transaksi selesai, (5) audit otomatis.
+- Batasan: PostgreSQL lokal, tanpa Docker/Bun, testing via Postman di VS Code.
+
+SLIDE 3 — ARSITEKTUR SISTEM (1,5 menit)
+- Gambar alur: Client (Postman/Browser) -> route -> controller -> service
+  -> repository -> PostgreSQL (function/procedure/trigger/view) -> respons JSON.
+- Struktur folder: src/config, routes, controllers, services, repositories,
+  models, middlewares, utils, database/migrations, index.ts (lihat README).
+- Tekankan: controller TIDAK langsung query; repository SATU-SATUNYA yang bicara
+  ke DB; service berisi aturan per-role (hash password, token).
+- Bukti: src/index.ts (pendaftaran 6 router), satu contoh route->controller
+  ->service->repository (misal pembelian).
+
+SLIDE 4 — DESAIN DATABASE (1,5 menit)
+- Tabel inti: kategori, alat_musik, stok, pelanggan/admin (akun), pembelian,
+  detail_pembelian, log_aktivitas (+ schema_migrations).
+- Constraint: CHECK harga/stok/status, UNIQUE (email, nama), FOREIGN KEY dengan
+  aksi ON DELETE (lihat 20261001_create_toko_schema.sql).
+- Index: idx_alat_kategori, idx_pembelian_pelanggan, idx_pembelian_status_tanggal,
+  idx_detail_pembelian_alat — alasan: mempercepat filter katalog, riwayat,
+  laporan bulanan, dan join detail.
+
+SLIDE 5 — FUNCTION & PROCEDURE (1,5 menit) — INTI NILAI JUAL
+- Function: fn_ambil_akun_login, fn_hitung_subtotal, fn_laporan_penjualan_bulanan.
+- Procedure: sp_registrasi_pelanggan, sp_tambah_stok, sp_ubah_stok,
+  sp_checkout_pembelian, sp_ubah_status_pembelian (+ wrapper fn_checkout_pembelian
+  karena node-pg tidak mengembalikan rows untuk CALL berparameter OUT).
+- Demo logika: sp_checkout_pembelian — cek pelanggan, cek daftar barang, INSERT
+  header, loop item (gabung alat_id sama + ORDER BY agar anti-deadlock), kunci
+  baris stok FOR UPDATE OF s, cek stok, INSERT detail, UPDATE stok, UPDATE total.
+- Alasan: aturan di DB = konsisten walau kliennya banyak/berbeda; lihat Bagian C.
+
+SLIDE 6 — TRIGGER & VIEW (1 menit)
+- Trigger (6): trg_buat_stok_awal (stok 0 otomatis), trg_cegah_hapus_alat_terjual,
+  trg_audit_stok, trg_log_pembelian, trg_log_status_pembelian, trg_kembalikan_stok
+  (stok kembali saat status -> dibatalkan).
+- View: v_katalog_alat, v_stok_alat, v_ringkasan_stok, v_riwayat_pembelian,
+  v_daftar_pembelian, v_detail_pembelian, v_alat_terlaris, v_log_aktivitas_terbaru.
+- Alasan: trigger = aturan yang tidak boleh dilewatkan aplikasi; view = query
+  kompleks cukup SELECT * FROM view (bukti: stok.repository.ts, pembelian.repository.ts).
+
+SLIDE 7 — TRANSACTION: COMMIT & ROLLBACK (1 menit)
+- Definisi (jawaban hafalan): COMMIT membuat semua perubahan yang ditunda menjadi
+  permanen; ROLLBACK membatalkan semua perubahan yang ditunda.
+- Implementasi 2 lapis:
+  (1) Aplikasi: helper withTransaction di src/config/db.ts (BEGIN -> work ->
+  COMMIT; error -> ROLLBACK; finally release). Dipakai di migrate.ts (satu file =
+  satu transaksi) dan tambahStokBatch (semua item berhasil atau tidak sama sekali).
+  (2) Database: tiap procedure atomik; contoh checkout gagal di item ke-3 maka
+  header+item sebelumnya ikut batal otomatis. Single CALL = atomik, tak perlu
+  BEGIN manual.
+- Kunci konkurensi: FOR UPDATE + agregasi + ORDER BY alat_id di sp_checkout.
+
+SLIDE 8 — KEAMANAN (1 menit)
+- Password: bcryptjs (hash saat registrasi, compare saat login; tidak pernah simpan
+  plaintext) — lihat services/auth.service.ts.
+- Login: JWT (payload id+role, secret dari JWT_SECRET min 16 char) — middleware
+  authenticate (401 bila token hilang/kedaluwarsa) + requireRole (403 bila role
+  salah) — lihat middlewares/auth.middleware.ts.
+- Otorisasi ganda: di aplikasi (middleware) DAN di DB (sp_ubah_status_pembelian cek
+  role + kepemilikan; pelanggan hanya boleh ke selesai/dibatalkan milik sendiri).
+- Role DB: pelanggan_role (baca katalog + panggil procedure pembelian) vs
+  admin_role (penuh); PUBLIC dicabut dari semua routine; procedure untuk pelanggan
+  pakai SECURITY DEFINER agar jalan tanpa akses langsung ke tabel.
+
+SLIDE 9 — ERROR HANDLING & VALIDASI (1 menit)
+- Error bisnis dari DB pakai kode kustom TM400/TM403/TM404/TM409 via RAISE
+  EXCEPTION ... USING ERRCODE; dipetakan di utils/http.ts ke 400/403/404/409.
+- Error bawaan PostgreSQL juga dipetakan: 23505 (duplikat)->409, 23503 (FK)->400/409,
+  23502/23514 (validasi)->400, 22P02 (format)->400.
+- Validasi input di controller (parseId, isPositiveInt, isNonEmptyString) agar
+  request sampah ditolak sebelum menyentuh DB; body JSON rusak -> 400.
+
+SLIDE 10 — DEMO LIVE (3 menit) — lihat Bagian B untuk skrip klik
+- Skenario: login admin -> buat kategori+alat -> tambah stok batch -> register+
+  login pelanggan -> checkout 2 item -> cek riwayat -> ubah status sesuai alur
+  pending->diproses->dikirim->selesai -> batalkan satu transaksi lain (stok kembali)
+  -> buka laporan bulanan + alat terlaris + log aktivitas.
+- Tunjukkan di SQLTools: stok berkurang, log_aktivitas terisi, trigger bekerja.
+
+SLIDE 11 — HASIL & PENGUJIAN (1 menit)
+- Koleksi Postman: 6 folder (Auth, Kategori, Alat Musik, Stok, Pembelian, Laporan)
+  + environment Local (baseUrl, token, adminToken, pelangganToken); token tersimpan
+  otomatis via Tests — tidak copy-paste manual.
+- Typecheck: npm run typecheck (tsc --noEmit, strict true).
+- Kasus uji: stok kurang -> 409; checkout kosong -> 400; hapus alat terjual -> 409;
+  ubah status ilegal -> 409; akses admin pakai token pelanggan -> 403; token
+  kedaluwarsa -> 401 (login ulang).
+
+SLIDE 12 — PENUTUP (1 menit)
+- Kesimpulan: API berjalan, aturan konsisten di DB, transaksi aman, audit otomatis.
+- Keterbatasan jujur: role DB sebagai definisi hak (koneksi app masih satu user
+  pemilik DB); laporan hanya hitung status selesai; belum pagination/rate-limit.
+- Pengembangan: pagination, refresh token, upload gambar, pengujian otomatis.
+
+================================================================================
+BAGIAN B — CARA-CARANYA (STEP-BY-STEP ANTI GAGAL)
+================================================================================
+
+B1. CARA SETUP DARI NOL (di laptop dosen/panelis, ±5 menit)
+  1. Syarat: Node.js 20+, PostgreSQL 16+ (service Running), VS Code.
+  2. copy .env.example .env  -> isi DB_PASSWORD dan JWT_SECRET (min 16 char).
+  3. npm install
+  4. npm run db:setup   (buat role toko_user + DB + pgcrypto + migrate + verifikasi)
+     - Kalau "password authentication failed untuk postgres": itu password superuser
+       saat install PostgreSQL, BUKAN DB_PASSWORD.
+     - Kalau gagal untuk toko_user: DB_PASSWORD diganti setelah setup -> jalankan
+       db:setup lagi agar password role ikut diperbarui.
+  5. npm run db:ping    (cek koneksi kapan saja)
+  6. npm run dev        (server di http://localhost:3000, cek GET / di browser)
+  7. Akun admin seed: admin@tokomusik.com / admin123.
+
+B2. CARA DEMO API (Postman di VS Code — TANPA Postman desktop)
+  1. VS Code: Ctrl+Shift+X -> install "Postman" (publisher Postman).
+  2. Klik ikon Postman di activity bar -> Collections -> Import ->
+     toko-alat-musik-api/toko-alat-musik-api.postman_collection.json, lalu import
+     toko-alat-musik-local.postman_environment.json.
+  3. Pilih environment "toko-alat-musik Local" (baseUrl http://localhost:3000/api/v1).
+  4. Urutan demo (jangan dilompat):
+     a. Auth -> Login Admin (token tersimpan otomatis ke {{token}}/{{adminToken}}).
+     b. Kategori -> Create Kategori (header sudah Bearer {{token}}).
+     c. Alat Musik -> Create Alat (stok awal 0 otomatis via trigger — tunjukkan).
+     d. Stok -> POST /stok batch (tunjukkan semua-atau-tidak-sama-sekali).
+     e. Auth -> Register Pelanggan -> Login Pelanggan ({{token}} kini milik pelanggan).
+     f. Pembelian -> Checkout {"barang":[{"alat_id":1,"jumlah":2},...]} -> catat id.
+     g. Pembelian -> Get Riwayat / Daftar / Detail.
+     h. Login lagi sebagai Admin -> PATCH status pending->diproses->dikirim->selesai.
+     i. Buat 1 pembelian lagi lalu batalkan -> tunjukkan stok kembali (trigger).
+     j. Laporan -> penjualan-bulanan, alat-terlaris, log-aktivitas.
+  5. Kalau 401: token kedaluwarsa -> ulangi login lalu kirim ulang.
+
+B3. CARA TUNJUKKAN DATABASE (SQLTools, ±1 menit)
+  1. Terminal VS Code: $env:DB_PASSWORD="isi_password_sesuai_env" (sekali per sesi).
+  2. Panel SQLTools -> koneksi "toko-alat-musik (lokal)" -> Connect.
+  3. Tunjukkan: SELECT * FROM stok; SELECT * FROM log_aktivitas ORDER BY id DESC LIMIT 10;
+     SELECT * FROM v_riwayat_pembelian; (bukti trigger + view bekerja).
+  4. Password tidak ada di git karena settings.json memakai ${env:DB_PASSWORD}.
+
+B4. CARA MENJAWAB (teknik 3 kalimat)
+  Pola: [Jawaban 1 kalimat] + [Alasan/bukti 1 kalimat + sebut file] + [Contoh 1 kalimat].
+  Contoh: "Checkout atomik karena satu CALL procedure = satu transaksi. Kalau stok
+  item ketiga kurang, RAISE EXCEPTION membatalkan header dan item sebelumnya
+  (lihat sp_checkout_pembelian). Kemarin kami uji checkout 2 item dengan 1 stok
+  kurang dan hasilnya 409 tanpa data setengah jadi."
+
+B5. CARA MENANGANI PERTANYAAN JEBAKAN
+  - Tidak tahu: "Itu belum kami uji; yang sudah kami uji adalah X (sebut file/hasil).
+    Alternatif yang masuk akal adalah Y karena Z."
+  - Diminta live coding: tawarkan baca file terkait dulu, jangan mengetik buta.
+  - Error saat demo: baca message HTTP (itu pesan bisnis dari DB), jelaskan kode
+    TM-nya — error yang rapi justru nilai plus.
+
+================================================================================
+BAGIAN C — ALASAN PEMILIHAN (KENAPA CARA INI, BUKAN CARA ITU)
+================================================================================
+
+C1. Kenapa TypeScript strict (bukan JavaScript biasa)?
+  - Model bertipe (DTO + hasil query) + types.setTypeParser NUMERIC->number mencegah
+    bug "total jadi string". tsconfig strict:true + typecheck tsc --noEmit.
+  - Bukti: src/models/*.ts, src/config/db.ts baris parser NUMERIC.
+
+C2. Kenapa Express 5 (bukan framework lain / versi lama)?
+  - Ringan, umum di materi kuliah, cukup untuk REST CRUD + middleware JWT/role.
+  - Express 5 dipakai dengan pola modern async + error middleware terpusat
+    (handleError) sehingga controller tipis dan konsisten.
+
+C3. Kenapa PostgreSQL lokal TANPA Docker/Bun?
+  - Target lab/kampus Windows: cukup install PostgreSQL, service Running, npm saja.
+    Tidak menambah dependensi Docker/Bun yang belum tentu ada di laptop penguji.
+  - Script db:setup + db:ping + migrate (tsx) membuat setup berulang dan reset DB
+    dari kosong jadi deterministik.
+
+C4. Kenapa tsx (bukan nodemon/ts-node)?
+  - tsx menjalankan TypeScript + path alias @config/* langsung tanpa build step,
+    cocok untuk dev (watch) dan skrip database. Alias didefinisikan di tsconfig paths.
+
+C5. Kenapa logika bisnis di DATABASE (function/procedure/trigger), bukan di JS?
+  - Konsistensi: validasi stok, hitung subtotal/total, aturan status, audit, dan
+    pengembalian stok dijamin berjalan walau kliennya banyak/berubah. Kalau di JS,
+    tiap endpoint baru berisiko lupa aturan.
+  - Keamanan data: constraint + trigger tidak bisa dilewati aplikasi yang bug.
+  - Konkurensi: kunci baris FOR UPDATE + agregasi + ORDER BY hanya bisa benar di
+    dalam transaksi DB (lihat sp_checkout_pembelian baris 37-52).
+  - Trade-off jujur: logika tersebar di SQL (perlu baca file migrasi), tapi untuk
+    sistem transaksi stok ini ketepatannya lebih penting.
+
+C6. Kenapa PROCEDURE untuk tulis + FUNCTION untuk baca/hitung?
+  - Procedure (CALL): aksi tulis multi-tabel (registrasi, tambah stok, checkout,
+    ubah status) — atomik dan bisa RAISE EXCEPTION membatalkan semua.
+  - Function (SELECT): nilai balik/hitungan (login, subtotal, laporan bulanan) —
+    mudah dipakai di query/view. Wrapper fn_checkout_pembelian ada karena node-pg
+    tidak mengembalikan rows untuk CALL berparameter OUT (lihat komentar di
+    pembelian.repository.ts:16-17 + migrasi 20261002_fix_out_params).
+
+C7. Kenapa TRIGGER (bukan kode aplikasi)?
+  - trg_buat_stok_awal: setiap alat baru PASTI punya stok 0 — tak ada yang lupa.
+  - trg_cegah_hapus_alat_terjual: riwayat penjualan tidak bisa dirusak (TM409).
+  - trg_audit_stok / trg_log_*: audit otomatis tanpa mengandalkan programmer.
+  - trg_kembalikan_stok: pembatalan PASTI mengembalikan stok (aturan di data,
+    bukan di ingatan).
+
+C8. Kenapa VIEW (bukan query panjang di repository)?
+  - Query join/agregat (katalog, stok, riwayat, terlaris, log) ditulis sekali di DB,
+    repository cukup SELECT * FROM view — endpoint pecahan controller (daftar vs
+    detail) tinggal pakai view berbeda (lihat 20261003_controller_views + repository).
+
+C9. Kenapa withTransaction di aplikasi MASIH perlu padahal procedure sudah atomik?
+  - Untuk operasi MULTI-CALL dari aplikasi: tambahStokBatch (loop CALL) dan migrate
+    (isi file SQL + catat schema_migrations) harus semua-atau-tidak-sama-sekali.
+  - Single CALL tidak perlu dibungkus (sudah atomik) — itu keputusan sadar, bukan lupa.
+
+C10. Kenapa bcryptjs (bukan bcrypt / plaintext)?
+  - Plaintext dilarang (bocor DB = bocor password). bcryptjs murni-JS, tanpa
+    native build di Windows lab, API hash/compare sederhana. Cost factor default
+    cukup untuk tugas kuliah.
+
+C11. Kenapa JWT + middleware ganda (bukan session)?
+  - REST stateless cocok untuk Postman/demo multi-klien; token bawa id+role.
+  - authenticate (401) + requireRole (403) di aplikasi, DITAMBAH cek role +
+    kepemilikan di procedure — pertahanan berlapis (contoh: pelanggan hanya boleh
+    ubah miliknya ke selesai/dibatalkan).
+
+C12. Kenapa kode error kustom TM400/403/404/409 (bukan pesan bebas)?
+  - RAISE ... USING ERRCODE memberi kontrak: DB tentukan JENIS salah, aplikasi
+    tentukan STATUS HTTP via tabel businessErrorStatus di utils/http.ts. Pesan
+    bisnis tampil ke user; error tak dikenal jadi 500 + console.error.
+
+C13. Kenapa Postman extension di VS Code (bukan desktop/curl/Bruno)?
+  - Sesuai standar project: koleksi + environment siap import, token tersimpan
+    otomatis via Tests, tidak perlu install desktop di laptop penguji. curl hanya
+    cadangan di README.
+
+C14. Kenapa SQLTools + ${env:DB_PASSWORD} (bukan password di settings)?
+  - Koneksi tim tersimpan di .vscode/settings.json yang di-track git, jadi password
+    WAJIB dari environment agar tidak bocor ke GitHub (.gitignore juga menolak .env).
+
+C15. Kenapa arsitektur route->controller->service->repository (bukan semua di satu file)?
+  - Tanggung jawab tunggal: route (path+role), controller (validasi+status HTTP),
+    service (aturan per-role, hash, token), repository (SATU-SATUNYA yang query DB).
+    Ganti aturan bisnis DB tanpa ubah HTTP, dan sebaliknya.
+
+================================================================================
+BAGIAN D — BANK PERTANYAAN YANG HAMPIR PASTI DITANYA + JAWABAN + BUKTI
+================================================================================
+
+Q1. "COMMIT dan ROLLBACK itu apa? Di mana di projectmu?"
+A: COMMIT membuat semua perubahan yang ditunda menjadi permanen; ROLLBACK
+   membatalkan semuanya. Ada di helper withTransaction (src/config/db.ts:28/33),
+   dipakai migrate.ts:53 dan stok.repository.ts:24. Plus tiap procedure atomik —
+   contoh checkout gagal di satu item maka header+item lain ikut batal.
+Bukti: tunjukkan db.ts + sp_checkout_pembelian.
+
+Q2. "Apa beda FUNCTION dan PROCEDURE? Kapan pakai mana?"
+A: Function mengembalikan nilai/tabel dan dipakai dalam SELECT (fn_hitung_subtotal,
+   fn_laporan_penjualan_bulanan, fn_ambil_akun_login). Procedure aksi tulis via
+   CALL (sp_checkout_pembelian, sp_ubah_status_pembelian, sp_tambah_stok).
+   Wrapper fn_checkout_pembelian ada karena node-pg tak kembalikan rows untuk CALL
+   ber-OUT param.
+
+Q3. "Trigger apa saja dan kenapa tidak di aplikasi?"
+A: 6 trigger (buat stok awal, cegah hapus terjual, audit stok, log pembelian, log
+   status, kembalikan stok). Di DB agar tidak bisa dilewati aplikasi yang bug —
+   contoh hapus alat terjual tetap ditolak walau endpoint-nya lupa cek.
+Bukti: 20261001_create_toko_triggers.sql.
+
+Q4. "Bagaimana checkout aman dari race condition / stok minus?"
+A: Agregasi item per alat_id + ORDER BY (kunci selalu urut, anti-deadlock) +
+   SELECT ... FOR UPDATE OF s (kunci baris stok) + cek v_stok < qty -> EXCEPTION
+   409. Baca dan kurang stok dalam satu transaksi.
+Bukti: sp_checkout_pembelian baris 37-60.
+
+Q5. "Alur status pembelian? Siapa boleh apa?"
+A: pending->diproses->dikirim->selesai; dibatalkan hanya dari pending/diproses;
+   selesai & dibatalkan final. Admin semua transisi valid; pelanggan hanya miliknya
+   ke selesai/dibatalkan. Dicek di procedure (bukan cuma middleware) + trigger
+   kembalikan stok saat ->dibatalkan. Laporan hanya hitung status selesai.
+
+Q6. "Kenapa logika di DB, bukankah berat / susah dirawat?"
+A: Untuk data transaksional, kebenaran > kenyamanan. Konsistensi + konkurensi +
+   audit dijamin di satu tempat; aplikasi tetap tipis dan mudah diganti. Konsekuensi
+   (logika di SQL) kami atasi dengan file migrasi ternama + peta di README.
+
+Q7. "View apa saja dan gunanya?"
+A: v_katalog_alat, v_stok_alat, v_ringkasan_stok, v_riwayat_pembelian,
+   v_daftar_pembelian, v_detail_pembelian, v_alat_terlaris, v_log_aktivitas_terbaru.
+   Repository tinggal SELECT view; controller pecahan (daftar vs detail) tanpa
+   duplikasi join.
+
+Q8. "Index dan constraint apa? Buktikan gunanya."
+A: CHECK (harga/stok/status), UNIQUE email/nama, FK dengan ON DELETE; index pada
+   kategori, pelanggan, status+tanggal, detail-alat. Coba insert harga negatif /
+   email ganda -> ditolak 400/409 (utils/http.ts: 23505, 23503, 23502/23514).
+
+Q9. "Autentikasi dan otorisasinya bagaimana?"
+A: bcryptjs hash + JWT (id, role). authenticate->401, requireRole->403. Procedure
+   verifikasi ulang role+kepemilikan. Role DB pelanggan_role vs admin_role, PUBLIC
+   dicabut, SECURITY DEFINER untuk procedure pelanggan.
+
+Q10. "Kenapa bcryptjs bukan bcrypt?"
+A: Murni JS tanpa kompilasi native di Windows lab; fungsi setara untuk kebutuhan
+   kuliah (hash saat daftar, compare saat login).
+
+Q11. "Kode TM400/403/404/409 itu apa?"
+A: SQLSTATE kustom dari RAISE EXCEPTION; http.ts memetakannya ke status HTTP yang
+   sama angkanya. Error PG standar (23505/23503/...) juga dipetakan agar respons
+   rapi { success:false, message }.
+
+Q12. "Kenapa Express 5 + pola middleware terpusat?"
+A: Cukup untuk REST kuliah; validasi di controller, aturan di service, query hanya
+   di repository, error diseragamkan di satu handleError (index.ts:35-37).
+
+Q13. "Kenapa tanpa Docker?"
+A: Agar jalan di laptop lab Windows bermodalkan PostgreSQL + Node + npm; setup
+   via db:setup deterministik (buat role/DB/pgcrypto/migrate/verifikasi).
+
+Q14. "Bagaimana migrasi aman diulang?"
+A: Tabel schema_migrations + skip file yang sudah applied; tiap file satu
+   transaksi withTransaction (gagal -> rollback file itu, tak setengah jalan).
+
+Q15. "Kelemahan project ini apa? (jujur!)"
+A: (1) Koneksi app satu user pemilik DB — role DB jadi definisi hak, belum split
+   koneksi per role. (2) Laporan hanya status selesai. (3) Belum pagination,
+   refresh token, rate-limit, upload gambar, dan test otomatis. Justru tunjukkan
+   kamu sadar batas — nilai plus.
+
+Q16. "Hapus akun pelanggan kok bisa ditolak?"
+A: Ada pengecekan riwayat: DELETE /auth/me (pelanggan) dan DELETE
+   /auth/pelanggan/:id (admin) menolak bila punya pembelian (jaga integritas
+   riwayat + FK). Bukti: migrasi 20261004_hapus_akun_pelanggan + endpoint di README.
+
+Q17. "bun.lock kemarin 5 problems itu apa?"
+A: 5 trailing-comma sehingga bukan strict JSON (validator VS Code protes) walau
+   bun install tetap jalan. Diperbaiki dengan hapus koma terakhir di tiap blok
+   (dependencies, devDependencies, 2 penutup objek, 1 item terakhir packages) +
+   asosiasi jsonc di settings. Sudah di-commit dan push.
+
+Q18. "Coba buktikan stok kembali saat batal (live)?"
+A: (Siapkan 1 pembelian pending.) PATCH ->dibatalkan sebagai admin, lalu di
+   SQLTools: SELECT * FROM stok WHERE alat_id=... (bertambah) + SELECT * FROM
+   log_aktivitas (baris STATUS_PEMBELIAN + audit STOK muncul via trigger).
+
+================================================================================
+BAGIAN E — CHECKLIST
+================================================================================
+
+H-1:
+[ ] .env terisi (DB_PASSWORD + JWT_SECRET 16+ char); npm install bersih.
+[ ] npm run db:setup sukses dari DB kosong; npm run db:ping OK; npm run typecheck OK.
+[ ] npm run dev jalan; GET / -> {"status":"OK"} di browser.
+[ ] Postman VS Code: koleksi + environment terimport; Login Admin OK; token tersimpan.
+[ ] SQLTools connect OK ($env:DB_PASSWORD terisi).
+[ ] Seed admin admin@tokomusik.com / admin123 bisa login.
+[ ] Skenario demo dicoba penuh 1x (catat id alat/pembelian yang dipakai).
+[ ] Baterai + hotspot cadangan; matikan notifikasi; zoom font VS Code/Postman.
+
+HARI-H (bawaan):
+[ ] Laptop + charger + kabel HDMI/USB-C; repo sudah di-pull terbaru (git status bersih).
+[ ] Terminal siap di folder project; satu terminal untuk server, satu untuk perintah.
+[ ] Tab terbuka: VS Code (src/config/db.ts, sp_checkout, triggers), Postman, SQLTools,
+    browser localhost:3000, file TXT ini.
+[ ] Kalimat cadangan jika demo error: "Ini justru contoh error handling kami — kode
+    TM409 artinya aturan bisnis menolak, bukan crash. Saya tunjukkan di file X."
+
+DURASI SARAN: total 15 menit = 1+1+1.5+1.5+1.5+1+1+1+1+3+1+1 (lihat Bagian A).
+Kalau waktu dipotong jadi 10 menit: gabung slide 6+7 dan 8+9, demo hanya
+checkout->status->laporan (tanpa batch).
+
+================================================================================
+
+================================================================================
+BAGIAN F -- ARTI TANDA KOMENTAR DI CODE (PENJELASAN PINDAHAN DARI CODE)
+================================================================================
+Aturan baca: di semua code (SQL + TypeScript) komentar hanya berupa tanda asal
+modul seperti --pembelian / //pembelian, --alat / //alat, --auth, --kategori,
+--laporan, --stok, --database, --config, //utils. Tanpa penjelasan panjang.
+Semua penjelasan panjang yang dulu ada di code dipindah ke bagian ini agar
+presentasi yang menjelaskan, bukan code.
+
+F1. TANDA --pembelian / //pembelian
+- sp_checkout_pembelian: item dengan alat_id sama digabung (GROUP BY + SUM),
+  lalu ORDER BY alat_id agar urutan penguncian baris stok selalu konsisten
+  antar transaksi (mencegah deadlock). Kunci baris: SELECT ... FOR UPDATE OF s,
+  cek stok kurang -> RAISE TM409, lalu INSERT detail + UPDATE stok + UPDATE total.
+- sp_ubah_status_pembelian: alur pending->diproses->dikirim->selesai;
+  dibatalkan hanya dari pending/diproses; selesai & dibatalkan final.
+  Admin boleh semua transisi valid; pelanggan hanya miliknya ke
+  selesai/dibatalkan (cek role + kepemilikan di procedure).
+- fn_checkout_pembelian (20261002_fix_out_params.sql): wrapper FUNCTION agar
+  nilai OUT procedure bisa dibaca node-pg. Latar: CALL sp_... (..., NULL, NULL)
+  via node-pg TIDAK mengembalikan rows sehingga res.rows[0] selalu undefined
+  dan checkout selalu 500. Fungsi ini CALL procedure lalu RETURN NEXT hasilnya.
+  Dipakai di pembelian.repository.ts createCheckout:
+  SELECT * FROM fn_checkout_pembelian($1, $2::jsonb).
+- GET /pembelian/daftar (login): sumber v_daftar_pembelian, header satu baris
+  per transaksi, pecahan dari v_riwayat_pembelian yang merangkum rincian nested.
+- GET /pembelian/detail?pembelian_id= (login): sumber v_detail_pembelian,
+  flat satu baris per item. Pelanggan hanya melihat miliknya (filter
+  pelanggan_id); admin boleh filter pembelian_id mana pun.
+- Repository: findDaftarPembelian = header satu baris per transaksi;
+  findDetailPembelian = detail flat per item (bisa filter pembelian_id dan/atau
+  pelanggan_id). Service getDaftarPembelian/getDetailPembelian hanya teruskan
+  sesuai role (admin = semua, pelanggan = miliknya).
+- Model: DaftarPembelian = baris v_daftar_pembelian (header); DetailPembelian
+  = baris v_detail_pembelian.
+
+F2. TANDA --alat / //alat
+- GET /alat-musik/lengkap (admin saja): pecahan endpoint katalog publik.
+  Sumber v_daftar_alat (ada stok_id & created_at, khas admin).
+- GET /alat-musik publik tetap pakai v_katalog_alat.
+- Repository findDaftarAlat = daftar lengkap khas admin; insert/update/delete
+  langsung ke tabel alat_musik (trigger yang urus stok awal & cegah hapus).
+- Model DaftarAlat = baris v_daftar_alat, pecahan dari KatalogAlat.
+
+F3. TANDA --auth / //auth
+- DELETE /auth/me: pelanggan menghapus akunnya sendiri. Ditolak 409 bila akun
+  masih memiliki riwayat pembelian (jaga integritas laporan + FK).
+- DELETE /auth/pelanggan/:id: admin menghapus akun pelanggan mana pun. Ditolak
+  409 bila pelanggan masih memiliki riwayat pembelian.
+- GET /auth/admin (admin saja): sumber v_daftar_admin.
+- GET /auth/pelanggan (admin saja): sumber v_daftar_pelanggan (ada
+  jumlah_pembelian + total_belanja status selesai).
+- sp_hapus_pelanggan: pelanggan hanya boleh hapus miliknya sendiri
+  (p_pelanggan_id <> p_akun_id -> TM403); role selain admin/pelanggan ditolak;
+  ID tidak ada -> TM404; punya riwayat pembelian -> TM409 (sejajar dengan
+  trigger trg_cegah_hapus_alat_terjual).
+- fn_registrasi_pelanggan: wrapper FUNCTION seperti checkout (node-pg tidak
+  kembalikan rows untuk CALL berparameter OUT). Dipakai di auth.repository.ts
+  createPelanggan: SELECT fn_registrasi_pelanggan(...) AS pelanggan_id.
+- sp_registrasi_pelanggan: cek email ganda di admin + pelanggan -> TM409,
+  lalu INSERT dan RETURNING id ke OUT param.
+- Repository findDaftarAdmin/findDaftarPelanggan = view daftar admin & pelanggan.
+
+F4. TANDA --kategori / //kategori
+- GET /kategori/daftar (publik): pecahan endpoint GET /kategori di atas.
+  Sumber v_daftar_kategori (kategori + agregat jumlah_alat & total_stok).
+- Repository findDaftarKategori = view daftar + agregat; findAllKategori =
+  tabel kategori mentah. Service getDaftarKategori hanya teruskan ke repo.
+
+F5. TANDA --laporan / //laporan
+- GET /laporan/pendapatan-per-kategori (admin): sumber v_pendapatan_per_kategori
+  (hanya status selesai, ada jumlah_transaksi + total_terjual + total_pendapatan).
+- GET /laporan/penjualan-per-bulan?tahun= (admin): sumber v_penjualan_per_bulan
+  (rekap per bulan status selesai, opsional filter tahun).
+- GET /laporan/log-aktivitas/semua?sumber=&limit= (admin): sumber v_log_aktivitas
+  (tanpa LIMIT 100 seperti endpoint lama v_log_aktivitas_terbaru, filter sumber
+  + limit 1-500).
+- fn_laporan_penjualan_bulanan: hitung transaksi/item/pendapatan bulan+tahun
+  tertentu, hanya status selesai; bulan 1-12 dan tahun 2000-2100, else TM400.
+- Repository: findPendapatanPerKategori / findPenjualanPerBulan (filter tahun
+  opsional) / findSemuaLogAktivitas (filter sumber + limit, default 100).
+- Model: PendapatanPerKategori = baris v_pendapatan_per_kategori;
+  PenjualanPerBulan = baris v_penjualan_per_bulan.
+- GRANT laporan: v_daftar_admin, v_ringkasan_stok, v_log_aktivitas,
+  v_pendapatan_per_kategori, v_penjualan_per_bulan hanya ke admin_role;
+  v_daftar_kategori, v_daftar_alat, v_daftar_pembelian, v_detail_pembelian ke
+  admin_role + pelanggan_role; v_daftar_pelanggan hanya admin_role.
+
+F6. TANDA --stok / //stok
+- GET /stok/ringkasan (admin): sumber v_ringkasan_stok, satu baris berisi
+  total_alat + total_unit + stok_kosong (jumlah=0) + stok_menipis (1-5).
+- GET /stok: sumber v_stok_alat (join stok + alat + nama admin).
+- sp_tambah_stok: jumlah harus > 0 (else TM400); UPDATE stok + catat admin_id;
+  tidak ketemu -> TM404. sp_ubah_stok: jumlah >= 0 (else TM400), set absolut.
+- tambahStokBatch: loop CALL sp_tambah_stok dalam withTransaction (semua item
+  berhasil atau tidak sama sekali); service mengurutkan alat_id dulu agar
+  urutan kunci konsisten.
+- Model RingkasanStok = baris tunggal v_ringkasan_stok.
+
+F7. TANDA --database / //database
+- setup-local.ts: setup PostgreSQL lokal tanpa Docker. Baca .env, deteksi
+  psql.exe (C:\Program Files\PostgreSQL\*\bin + where), minta password
+  superuser postgres via prompt tersembunyi (hanya di memori via PGPASSWORD,
+  tidak ditulis ke file/log/git). Lalu: (1) tes koneksi superuser, (2) buat
+  role aplikasi bila belum ada, (3) buat database bila belum ada + set owner,
+  (4) aktifkan ekstensi pgcrypto (dibutuhkan seed crypt/gen_salt),
+  (5) jalankan npm run migrate + verifikasi koneksi sebagai DB_USER (hitung
+  tabel + view). Urutan versi psql: paling baru dulu.
+- ping.ts: tes cepat koneksi pakai .env yang sama; sukses bila keluar daftar
+  tabel + view hasil migrasi (SELECT NOW + COUNT tabel + daftar view).
+- migrate.ts: tiap file satu transaksi withTransaction (isi SQL + catat
+  schema_migrations); gagal -> rollback file itu; file applied di-skip.
+- cleanup-test-delete.ts: hapus data uji hapus.tes / admin.hapus /
+  riwayat.tes (hapus pembelian dulu baru pelanggan agar lolos FK).
+- Trigger (20261001_create_toko_triggers.sql): trg_buat_stok_awal (alat baru
+  pasti stok 0), trg_cegah_hapus_alat_terjual (ada riwayat -> TM409),
+  trg_audit_stok (jumlah berubah -> log STOK), trg_log_pembelian (INSERT ->
+  log PEMBELIAN), trg_log_status_pembelian (status berubah -> log
+  STATUS_PEMBELIAN), trg_kembalikan_stok (OLD<>dibatalkan AND NEW=dibatalkan ->
+  stok kembali sejumlah detail).
+- View inti (20261001_create_toko_views.sql): v_katalog_alat (alat+kategori+
+  stok), v_stok_alat, v_riwayat_pembelian (rincian nested jsonb_agg),
+  v_alat_terlaris (hanya selesai), v_log_aktivitas_terbaru (LIMIT 100).
+- Privileges: REVOKE ALL ON ALL ROUTINES FROM PUBLIC; pelanggan_role hanya
+  SELECT v_katalog_alat + EXECUTE fn_hitung_subtotal, sp_registrasi,
+  sp_checkout, sp_ubah_status (+ wrapper fn_registrasi/fn_checkout,
+  sp_hapus_pelanggan); admin_role ALL pada tabel/sequence/routine.
+- Seed: admin admin@tokomusik.com/admin123 (crypt bf 10), 4 kategori,
+  6 alat, stok awal via CALL sp_tambah_stok.
+
+F8. TANDA --config / //config
+- db.ts: NUMERIC/DECIMAL dikirim pg sebagai string, diubah ke number via
+  types.setTypeParser agar sesuai tipe model. Pool max 10. withTransaction:
+  BEGIN -> work -> COMMIT; error -> ROLLBACK; finally release. Dipakai
+  migrate.ts (satu file = satu transaksi) dan tambahStokBatch (multi-CALL).
+  Single CALL procedure sudah atomik, tak perlu dibungkus.
+- env.ts/jwt.ts: requireEnv wajib ada; JWT_SECRET min 16 char;Expires 1d.
+
+F9. TANDA //utils
+- http.ts: SQLSTATE TM4xx adalah kode kustom dari RAISE EXCEPTION di
+  function/procedure (TM400->400, TM403->403, TM404->404, TM409->409).
+  Error PG standar dipetakan: 23505 duplikat->409, 23503 FK->400/409,
+  23502/23514 validasi->400, 22P02 format->400, 22003 overflow->400.
+  Body JSON rusak -> 400, terlalu besar -> 413. Tak dikenal -> 500 +
+  console.error. Helper parseId/isPositiveInt/isNonEmptyString menolak
+  request sampah di controller sebelum menyentuh DB.
+SELESAI — semoga lancar presentasinya!
+================================================================================

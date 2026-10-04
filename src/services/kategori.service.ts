@@ -6,7 +6,7 @@ export async function getAllKategori(): Promise<Kategori[]> {
   return await kategoriRepo.findAllKategori();
 }
 
-// View untuk controller kategori (sudah termasuk agregat jumlah alat & stok).
+//kategori
 export async function getDaftarKategori(): Promise<DaftarKategori[]> {
   return await kategoriRepo.findDaftarKategori();
 }

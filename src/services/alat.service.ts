@@ -16,7 +16,7 @@ export async function getDetailAlat(id: number): Promise<KatalogAlat> {
   return alat;
 }
 
-// View untuk controller alat: daftar lengkap khas admin.
+//alat
 export async function getDaftarAlat(kategoriId?: number): Promise<DaftarAlat[]> {
   return await alatRepo.findDaftarAlat(kategoriId);
 }

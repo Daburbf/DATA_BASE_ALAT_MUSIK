@@ -10,7 +10,7 @@ export interface Kategori {
   created_at: Date;
 }
 
-// Baris dari v_daftar_kategori.
+//kategori
 export interface DaftarKategori {
   id: number;
   nama_kategori: string;

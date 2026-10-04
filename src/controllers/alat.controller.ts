@@ -42,8 +42,7 @@ export async function getAlat(req: Request, res: Response): Promise<Response> {
   }
 }
 
-// GET /alat-musik/lengkap — admin saja, pecahan endpoint katalog publik.
-// Sumber: v_daftar_alat (ada stok_id & created_at).
+//alat
 export async function getDaftarAlat(req: Request, res: Response): Promise<Response> {
   try {
     let kategoriId: number | undefined;

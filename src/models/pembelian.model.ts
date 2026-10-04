@@ -26,7 +26,7 @@ export interface RiwayatPembelian {
   }>;
 }
 
-// Baris dari v_daftar_pembelian (header, pecahan dari v_riwayat_pembelian).
+//pembelian
 export interface DaftarPembelian {
   pembelian_id: number;
   pelanggan_id: number;
@@ -38,7 +38,7 @@ export interface DaftarPembelian {
   tanggal_pembelian: Date;
 }
 
-// Baris dari v_detail_pembelian.
+//pembelian
 export interface DetailPembelian {
   detail_id: number;
   pembelian_id: number;

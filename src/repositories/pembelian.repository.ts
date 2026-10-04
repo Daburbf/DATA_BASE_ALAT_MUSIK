@@ -13,8 +13,7 @@ export async function createCheckout(
   pelangganId: number,
   items: CheckoutItemDto[]
 ): Promise<CheckoutResult> {
-  // node-pg tidak mengembalikan rows untuk CALL dengan parameter OUT,
-  // maka dipakai wrapper FUNCTION yang me-return nilainya.
+  //pembelian
   const res = await pool.query<{ pembelian_id: number; total: number }>(
     "SELECT * FROM fn_checkout_pembelian($1, $2::jsonb)",
     [pelangganId, JSON.stringify(items)]
@@ -40,7 +39,7 @@ export async function findRiwayatSemua(): Promise<RiwayatPembelian[]> {
   return res.rows;
 }
 
-// View pecahan untuk controller pembelian: header (satu baris per transaksi).
+//pembelian
 export async function findDaftarPembelian(pelangganId?: number): Promise<DaftarPembelian[]> {
   if (pelangganId !== undefined) {
     const res = await pool.query<DaftarPembelian>(
@@ -54,7 +53,7 @@ export async function findDaftarPembelian(pelangganId?: number): Promise<DaftarP
   return res.rows;
 }
 
-// View pecahan untuk controller pembelian: detail flat per item.
+//pembelian
 export async function findDetailPembelian(
   pembelianId?: number,
   pelangganId?: number

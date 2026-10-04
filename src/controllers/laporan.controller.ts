@@ -37,7 +37,7 @@ export async function getLogAktivitas(_req: Request, res: Response): Promise<Res
   }
 }
 
-// GET /laporan/pendapatan-per-kategori — admin. Sumber: v_pendapatan_per_kategori.
+//laporan
 export async function getPendapatanPerKategori(_req: Request, res: Response): Promise<Response> {
   try {
     const data = await laporanService.getPendapatanPerKategori();
@@ -47,7 +47,7 @@ export async function getPendapatanPerKategori(_req: Request, res: Response): Pr
   }
 }
 
-// GET /laporan/penjualan-per-bulan?tahun= — admin. Sumber: v_penjualan_per_bulan.
+//laporan
 export async function getPenjualanPerBulan(req: Request, res: Response): Promise<Response> {
   try {
     let tahun: number | undefined;
@@ -67,8 +67,7 @@ export async function getPenjualanPerBulan(req: Request, res: Response): Promise
   }
 }
 
-// GET /laporan/log-aktivitas/semua?sumber=&limit= — admin.
-// Sumber: v_log_aktivitas (tanpa LIMIT 100 seperti endpoint lama).
+//laporan
 export async function getSemuaLogAktivitas(req: Request, res: Response): Promise<Response> {
   try {
     const { sumber, limit } = req.query;

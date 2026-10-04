@@ -5,7 +5,7 @@ export async function getAllStok(): Promise<StokAlat[]> {
   return await stokRepo.findAllStok();
 }
 
-// View untuk controller stok: satu baris ringkasan.
+//stok
 export async function getRingkasanStok(): Promise<RingkasanStok> {
   return await stokRepo.findRingkasanStok();
 }

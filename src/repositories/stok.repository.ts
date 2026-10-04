@@ -6,7 +6,7 @@ export async function findAllStok(): Promise<StokAlat[]> {
   return res.rows;
 }
 
-// View untuk controller stok: satu baris ringkasan.
+//stok
 export async function findRingkasanStok(): Promise<RingkasanStok> {
   const res = await pool.query<RingkasanStok>("SELECT * FROM v_ringkasan_stok");
   const row = res.rows[0];

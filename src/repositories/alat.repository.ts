@@ -19,7 +19,7 @@ export async function findAlatById(id: number): Promise<KatalogAlat | null> {
   return res.rows[0] ?? null;
 }
 
-// View untuk controller alat: daftar lengkap khas admin (ada stok_id & created_at).
+//alat
 export async function findDaftarAlat(kategoriId?: number): Promise<DaftarAlat[]> {
   if (kategoriId !== undefined) {
     const res = await pool.query<DaftarAlat>(

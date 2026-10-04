@@ -14,7 +14,7 @@ export async function findAkunByEmail(email: string): Promise<AkunLogin | null> 
   return res.rows[0] ?? null;
 }
 
-// View untuk controller auth: daftar admin & pelanggan.
+//auth
 export async function findDaftarAdmin(): Promise<DaftarAdmin[]> {
   const res = await pool.query<DaftarAdmin>("SELECT * FROM v_daftar_admin");
   return res.rows;
@@ -30,8 +30,7 @@ export async function deletePelanggan(pelangganId: number, akunId: number, role:
 }
 
 export async function createPelanggan(data: CreatePelangganData): Promise<number> {
-  // node-pg tidak mengembalikan rows untuk CALL dengan parameter OUT,
-  // maka dipakai wrapper FUNCTION yang me-return nilainya.
+  //auth
   const res = await pool.query<{ pelanggan_id: number }>(
     "SELECT fn_registrasi_pelanggan($1, $2, $3, $4, $5) AS pelanggan_id",
     [

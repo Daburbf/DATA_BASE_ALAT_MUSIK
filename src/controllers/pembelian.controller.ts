@@ -45,8 +45,7 @@ export async function getRiwayatPembelian(req: Request, res: Response): Promise<
   }
 }
 
-// GET /pembelian/daftar — login. Sumber: v_daftar_pembelian (header per transaksi,
-// pecahan dari v_riwayat_pembelian yang merangkum rincian nested).
+//pembelian
 export async function getDaftarPembelian(req: Request, res: Response): Promise<Response> {
   try {
     const data = await pembelianService.getDaftarPembelian(req.user!.id, req.user!.role);
@@ -56,8 +55,7 @@ export async function getDaftarPembelian(req: Request, res: Response): Promise<R
   }
 }
 
-// GET /pembelian/detail?pembelian_id= — login. Sumber: v_detail_pembelian (flat per item).
-// Pelanggan hanya melihat miliknya; admin boleh filter pembelian_id mana pun.
+//pembelian
 export async function getDetailPembelian(req: Request, res: Response): Promise<Response> {
   try {
     let pembelianId: number | undefined;

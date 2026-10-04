@@ -46,7 +46,7 @@ export async function deletePelanggan(pelangganId: number, akunId: number, role:
   await authRepo.deletePelanggan(pelangganId, akunId, role);
 }
 
-// View untuk controller auth.
+//auth
 export async function getDaftarAdmin(): Promise<DaftarAdmin[]> {
   return await authRepo.findDaftarAdmin();
 }

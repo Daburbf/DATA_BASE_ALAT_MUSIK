@@ -22,7 +22,7 @@ export async function getLogAktivitas(): Promise<LogAktivitas[]> {
   return await laporanRepo.findLogAktivitas();
 }
 
-// View pecahan untuk controller laporan.
+//laporan
 export async function getPendapatanPerKategori(): Promise<PendapatanPerKategori[]> {
   return await laporanRepo.findPendapatanPerKategori();
 }

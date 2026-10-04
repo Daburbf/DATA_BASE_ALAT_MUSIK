@@ -1,8 +1,4 @@
--- Wrapper FUNCTION agar nilai OUT dari procedure bisa dibaca lewat node-pg.
--- Latar: `CALL sp_... (..., NULL, NULL)` via node-pg TIDAK mengembalikan rows,
--- sehingga `res.rows[0]` selalu undefined dan register/checkout selalu 500.
--- Fungsi ini memanggil procedure yang sudah ada lalu me-return hasilnya.
-
+--pembelian
 CREATE OR REPLACE FUNCTION fn_registrasi_pelanggan(
     p_nama VARCHAR,
     p_email VARCHAR,

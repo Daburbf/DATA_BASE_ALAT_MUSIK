@@ -15,7 +15,7 @@ export interface KatalogAlat {
   jumlah_stok: number;
 }
 
-// Baris dari v_daftar_alat (dipakai admin, pecahan dari v_katalog_alat).
+//alat
 export interface DaftarAlat extends KatalogAlat {
   stok_id: number | null;
   created_at: Date;

@@ -28,13 +28,13 @@ export async function findLogAktivitas(): Promise<LogAktivitas[]> {
   return res.rows;
 }
 
-// View pecahan untuk controller laporan: pendapatan per kategori.
+//laporan
 export async function findPendapatanPerKategori(): Promise<PendapatanPerKategori[]> {
   const res = await pool.query<PendapatanPerKategori>("SELECT * FROM v_pendapatan_per_kategori");
   return res.rows;
 }
 
-// View pecahan untuk controller laporan: rekap per bulan (opsional filter tahun).
+//laporan
 export async function findPenjualanPerBulan(tahun?: number): Promise<PenjualanPerBulan[]> {
   if (tahun !== undefined) {
     const res = await pool.query<PenjualanPerBulan>(
@@ -48,7 +48,7 @@ export async function findPenjualanPerBulan(tahun?: number): Promise<PenjualanPe
   return res.rows;
 }
 
-// View pecahan untuk controller laporan: semua log dengan filter sumber + limit.
+//laporan
 export async function findSemuaLogAktivitas(
   sumber?: string,
   limit = 100

@@ -1,21 +1,4 @@
-/**
- * Setup database PostgreSQL lokal (tanpa Docker) untuk project toko-alat-musik.
- *
- * Cara pakai (satu kali saja):
- *   1. Isi file .env (DB_USER, DB_PASSWORD, DB_NAME, JWT_SECRET).
- *   2. Jalankan:  npm run db:setup   (atau:  npx tsx src/database/setup-local.ts)
- *
- * Yang dilakukan script ini (berurutan):
- *   a. Baca .env, deteksi instalasi PostgreSQL lokal (C:\Program Files\PostgreSQL\*\bin\psql.exe).
- *   b. Minta password superuser "postgres" lewat prompt terminal (tidak disimpan di mana pun).
- *   c. Buat ROLE toko_user (atau DB_USER) + DATABASE toko_alat_musik (atau DB_NAME) bila belum ada.
- *   d. Aktifkan ekstensi pgcrypto di database target (dibutuhkan seed password admin).
- *   e. Jalankan ulang perintah `npm run migrate` di dalam script ini, lalu verifikasi
- *      koneksi sebagai DB_USER + hitung jumlah tabel hasil migrasi.
- *
- * Keamanan: password superuser hanya dipakai di memori proses ini via env PGPASSWORD
- * dan TIDAK pernah ditulis ke file, log, maupun git.
- */
+//database
 import { spawnSync } from "child_process";
 import { createInterface } from "readline";
 import { existsSync, readdirSync } from "fs";
@@ -58,7 +41,7 @@ function findPsql(): string {
         "lalu jalankan lagi script ini."
     );
   }
-  // Versi paling baru dulu (nama folder = angka versi).
+  //database
   candidates.sort().reverse();
   return candidates[0] as string;
 }
@@ -71,12 +54,12 @@ function askHidden(question: string): Promise<string> {
       const s = ch.toString();
       if (s === "\r" || s === "\n") process.stdout.write("\n");
     };
-    // Sembunyikan ketikan (best-effort di Windows).
+    //database
     if (stdin.isTTY) {
       try {
         (stdin as unknown as { setRawMode: (m: boolean) => void }).setRawMode(true);
       } catch {
-        /* abaikan */
+        //database
       }
     }
     stdin.on("data", onData);
@@ -86,7 +69,7 @@ function askHidden(question: string): Promise<string> {
         try {
           (stdin as unknown as { setRawMode: (m: boolean) => void }).setRawMode(false);
         } catch {
-          /* abaikan */
+          //database
         }
       }
       rl.close();
@@ -95,7 +78,7 @@ function askHidden(question: string): Promise<string> {
   });
 }
 
-/** Jalankan satu perintah SQL via psql sebagai superuser. Return true bila sukses. */
+//database
 function psqlAsSuperuser(psql: string, superPassword: string, db: string, sql: string): boolean {
   const r = spawnSync(psql, ["-h", DB_HOST, "-p", String(DB_PORT), "-U", "postgres", "-d", db, "-v", "ON_ERROR_STOP=1", "-c", sql], {
     encoding: "utf-8",
@@ -134,20 +117,20 @@ async function main(): Promise<void> {
   const superPassword = await askHidden("Password superuser postgres lokal (tidak ditampilkan): ");
   if (!superPassword) fail("Password superuser wajib diisi.");
 
-  // 1. Tes koneksi superuser.
+  //database
   console.log("[db:setup] (1/5) cek koneksi superuser...");
   if (!psqlAsSuperuser(psql, superPassword, "postgres", "SELECT 1;")) {
     fail('Login superuser "postgres" gagal. Cek lagi password yang dimasukkan saat install PostgreSQL.');
   }
 
-  // 2. Buat role aplikasi bila belum ada.
+  //database
   console.log("[db:setup] (2/5) siapkan role aplikasi...");
   const mkRole = `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${escapeLiteral(DB_USER)}) THEN ` +
     `CREATE ROLE ${escapeIdent(DB_USER)} LOGIN PASSWORD ${escapeLiteral(DB_PASSWORD)}; ` +
     `ELSE ALTER ROLE ${escapeIdent(DB_USER)} LOGIN PASSWORD ${escapeLiteral(DB_PASSWORD)}; END IF; END $$;`;
   if (!psqlAsSuperuser(psql, superPassword, "postgres", mkRole)) fail("Gagal membuat role aplikasi.");
 
-  // 3. Buat database bila belum ada + set owner.
+  //database
   console.log("[db:setup] (3/5) siapkan database...");
   const mkDb =
     `SELECT 'CREATE DATABASE ${escapeIdent(DB_NAME)} OWNER ${escapeIdent(DB_USER)}' ` +
@@ -157,13 +140,13 @@ async function main(): Promise<void> {
     fail("Gagal set owner database.");
   }
 
-  // 4. Aktifkan pgcrypto (dibutuhkan seed: crypt/gen_salt).
+  //database
   console.log("[db:setup] (4/5) aktifkan ekstensi pgcrypto...");
   if (!psqlAsSuperuser(psql, superPassword, DB_NAME, `CREATE EXTENSION IF NOT EXISTS pgcrypto;`)) {
     fail("Gagal mengaktifkan pgcrypto.");
   }
 
-  // 5. Migrasi via kode yang sudah ada + verifikasi koneksi sebagai DB_USER.
+  //database
   console.log("[db:setup] (5/5) jalankan migrasi (npm run migrate)...");
   const migrate = spawnSync("npm", ["run", "migrate"], { shell: true, stdio: "inherit" });
   if (migrate.status !== 0) fail("Migrasi gagal — lihat log di atas.");

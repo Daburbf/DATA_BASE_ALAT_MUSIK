@@ -6,7 +6,7 @@ export async function findAllKategori(): Promise<Kategori[]> {
   return res.rows;
 }
 
-// View untuk controller kategori: daftar + agregat jumlah alat & stok.
+//kategori
 export async function findDaftarKategori(): Promise<DaftarKategori[]> {
   const res = await pool.query<DaftarKategori>("SELECT * FROM v_daftar_kategori");
   return res.rows;

@@ -32,8 +32,7 @@ BEGIN
     INSERT INTO pembelian (pelanggan_id) VALUES (p_pelanggan_id)
     RETURNING id INTO p_pembelian_id;
 
-    -- Item dengan alat_id sama digabung, dan diurutkan agar urutan penguncian
-    -- baris stok selalu konsisten antar transaksi (mencegah deadlock).
+    --pembelian
     FOR item IN
         SELECT (value->>'alat_id')::INT AS a_id,
                SUM((value->>'jumlah')::INT)::INT AS qty

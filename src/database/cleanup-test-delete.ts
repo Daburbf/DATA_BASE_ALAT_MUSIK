@@ -19,7 +19,7 @@ main().catch(async (err) => {
   try {
     await pool.end();
   } catch {
-    /* abaikan */
+    //database
   }
   process.exit(1);
 });

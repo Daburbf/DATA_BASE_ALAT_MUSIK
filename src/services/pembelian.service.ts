@@ -24,7 +24,7 @@ export async function getRiwayat(akunId: number, role: Role): Promise<RiwayatPem
   return await pembelianRepo.findRiwayatByPelanggan(akunId);
 }
 
-// View pecahan untuk controller pembelian: header per transaksi.
+//pembelian
 export async function getDaftarPembelian(akunId: number, role: Role): Promise<DaftarPembelian[]> {
   if (role === "admin") {
     return await pembelianRepo.findDaftarPembelian();
@@ -33,7 +33,7 @@ export async function getDaftarPembelian(akunId: number, role: Role): Promise<Da
   return await pembelianRepo.findDaftarPembelian(akunId);
 }
 
-// View pecahan untuk controller pembelian: detail flat per item.
+//pembelian
 export async function getDetailPembelian(
   akunId: number,
   role: Role,

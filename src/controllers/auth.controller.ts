@@ -50,8 +50,7 @@ export async function login(req: Request, res: Response): Promise<Response> {
   }
 }
 
-// DELETE /auth/me — pelanggan menghapus akunnya sendiri.
-// Ditolak (409) bila akun masih memiliki riwayat pembelian.
+//auth
 export async function deleteAkunSendiri(req: Request, res: Response): Promise<Response> {
   try {
     await authService.deletePelanggan(req.user!.id, req.user!.id, req.user!.role);
@@ -61,8 +60,7 @@ export async function deleteAkunSendiri(req: Request, res: Response): Promise<Re
   }
 }
 
-// DELETE /auth/pelanggan/:id — admin menghapus akun pelanggan mana pun.
-// Ditolak (409) bila pelanggan masih memiliki riwayat pembelian.
+//auth
 export async function deletePelanggan(req: Request, res: Response): Promise<Response> {
   try {
     const id = parseId(req.params.id);
@@ -78,7 +76,7 @@ export async function deletePelanggan(req: Request, res: Response): Promise<Resp
   }
 }
 
-// GET /auth/admin — admin saja. Sumber: v_daftar_admin.
+//auth
 export async function getDaftarAdmin(_req: Request, res: Response): Promise<Response> {
   try {
     const data = await authService.getDaftarAdmin();
@@ -88,7 +86,7 @@ export async function getDaftarAdmin(_req: Request, res: Response): Promise<Resp
   }
 }
 
-// GET /auth/pelanggan — admin saja. Sumber: v_daftar_pelanggan.
+//auth
 export async function getDaftarPelanggan(_req: Request, res: Response): Promise<Response> {
   try {
     const data = await authService.getDaftarPelanggan();

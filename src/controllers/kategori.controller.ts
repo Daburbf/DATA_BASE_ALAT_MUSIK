@@ -11,8 +11,7 @@ export async function getKategori(_req: Request, res: Response): Promise<Respons
   }
 }
 
-// GET /kategori/daftar — publik, pecahan endpoint di atas.
-// Sumber: v_daftar_kategori (kategori + agregat jumlah alat & stok).
+//kategori
 export async function getDaftarKategori(_req: Request, res: Response): Promise<Response> {
   try {
     const data = await kategoriService.getDaftarKategori();

@@ -1,8 +1,4 @@
-/**
- * Tes cepat koneksi database memakai .env yang sama dengan aplikasi.
- * Jalankan:  npm run db:ping
- * Sukses bila keluar daftar tabel + view hasil migrasi.
- */
+//database
 import "@config/env";
 import { pool } from "@config/db";
 
@@ -27,7 +23,7 @@ main().catch(async (err) => {
   try {
     await pool.end();
   } catch {
-    /* abaikan */
+    //database
   }
   process.exit(1);
 });

@@ -7,7 +7,7 @@ interface DatabaseErrorLike {
   detail?: string;
 }
 
-// SQLSTATE TM4xx adalah kode kustom dari RAISE EXCEPTION di function/procedure.
+//utils
 const businessErrorStatus: Record<string, number> = {
   TM400: 400,
   TM403: 403,

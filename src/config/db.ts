@@ -2,7 +2,7 @@ import { Pool, types } from "pg";
 import type { PoolClient } from "pg";
 import { requireEnv } from "@config/env";
 
-// NUMERIC/DECIMAL dikirim pg sebagai string, diubah ke number agar sesuai tipe model.
+//config
 types.setTypeParser(types.builtins.NUMERIC, (value) => Number(value));
 
 export const pool = new Pool({

@@ -12,7 +12,7 @@ export interface StokAlat {
   updated_at: Date;
 }
 
-// Baris tunggal dari v_ringkasan_stok.
+//stok
 export interface RingkasanStok {
   total_alat: number;
   total_unit: number;
