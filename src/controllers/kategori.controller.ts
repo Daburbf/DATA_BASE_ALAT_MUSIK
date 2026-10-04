@@ -11,6 +11,17 @@ export async function getKategori(_req: Request, res: Response): Promise<Respons
   }
 }
 
+// GET /kategori/daftar — publik, pecahan endpoint di atas.
+// Sumber: v_daftar_kategori (kategori + agregat jumlah alat & stok).
+export async function getDaftarKategori(_req: Request, res: Response): Promise<Response> {
+  try {
+    const data = await kategoriService.getDaftarKategori();
+    return res.status(200).json({ success: true, data });
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
 export async function createKategori(req: Request, res: Response): Promise<Response> {
   try {
     const { nama_kategori, deskripsi } = req.body ?? {};

@@ -13,6 +13,16 @@ export async function getStok(_req: Request, res: Response): Promise<Response> {
   }
 }
 
+// GET /stok/ringkasan — admin. Sumber: v_ringkasan_stok.
+export async function getRingkasanStok(_req: Request, res: Response): Promise<Response> {
+  try {
+    const data = await stokService.getRingkasanStok();
+    return res.status(200).json({ success: true, data });
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
 export async function tambahStok(req: Request, res: Response): Promise<Response> {
   try {
     const { alat_id, jumlah } = req.body ?? {};

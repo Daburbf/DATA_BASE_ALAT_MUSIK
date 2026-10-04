@@ -1,4 +1,4 @@
-import type { AlatDto, KatalogAlat } from "@models/alat.model";
+import type { AlatDto, DaftarAlat, KatalogAlat } from "@models/alat.model";
 import * as alatRepo from "@repositories/alat.repository";
 import { AppError } from "@utils/app-error";
 
@@ -14,6 +14,11 @@ export async function getDetailAlat(id: number): Promise<KatalogAlat> {
   }
 
   return alat;
+}
+
+// View untuk controller alat: daftar lengkap khas admin.
+export async function getDaftarAlat(kategoriId?: number): Promise<DaftarAlat[]> {
+  return await alatRepo.findDaftarAlat(kategoriId);
 }
 
 export async function createAlat(data: AlatDto): Promise<number> {

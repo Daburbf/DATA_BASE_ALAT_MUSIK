@@ -1,8 +1,13 @@
-import type { StokAlat, TambahStokDto } from "@models/stok.model";
+import type { RingkasanStok, StokAlat, TambahStokDto } from "@models/stok.model";
 import * as stokRepo from "@repositories/stok.repository";
 
 export async function getAllStok(): Promise<StokAlat[]> {
   return await stokRepo.findAllStok();
+}
+
+// View untuk controller stok: satu baris ringkasan.
+export async function getRingkasanStok(): Promise<RingkasanStok> {
+  return await stokRepo.findRingkasanStok();
 }
 
 export async function addStok(data: TambahStokDto, adminId: number): Promise<void> {

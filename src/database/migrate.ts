@@ -1,5 +1,6 @@
 import { pool, withTransaction } from "../config/db";
 import path from "path";
+import { readFile, stat } from "fs/promises";
 
 const migrationFiles = [
    "src/database/migrations/20261001_create_toko_schema.sql",
@@ -9,7 +10,9 @@ const migrationFiles = [
    "src/database/migrations/20261001_create_toko_triggers.sql",
    "src/database/migrations/20261001_create_toko_views.sql",
    "src/database/migrations/20261001_seed_toko_data.sql",
-   "src/database/migrations/20261001_create_toko_privileges.sql"
+   "src/database/migrations/20261001_create_toko_privileges.sql",
+   "src/database/migrations/20261002_fix_out_params.sql",
+   "src/database/migrations/20261003_controller_views.sql"
 ];
 
 async function migrate() {
@@ -37,12 +40,14 @@ async function migrate() {
 
          console.log(`Executing: ${fileName}`);
 
-         const file = Bun.file(absolutePath);
-         if (!(await file.exists())) {
+         let sqlContent: string;
+         try {
+            await stat(absolutePath);
+         } catch {
             throw new Error(`File missing: ${absolutePath}`);
          }
 
-         const sqlContent = await file.text();
+         sqlContent = await readFile(absolutePath, "utf-8");
 
          await withTransaction(async (client) => {
             await client.query(sqlContent);

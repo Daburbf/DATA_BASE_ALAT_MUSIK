@@ -17,10 +17,20 @@ logs
 .env.production.local
 .env.local
 
+# VS Code — abaikan setting lokal berisi password, tapi JANGAN abaikan
+# .vscode/settings.json & extensions.json (koneksi DB tim berisi ${env:...})
+.vscode/*,!/.vscode/settings.json,!/.vscode/extensions.json
+.history.sql
+*.sqlpro
+
 # caches
 .eslintcache
 .cache
 *.tsbuildinfo
+*.tmp
+
+# test tokens / local secrets (jangan push ke GitHub)
+.test-token.txt
 
 # IntelliJ based IDEs
 .idea

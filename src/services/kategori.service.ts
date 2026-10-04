@@ -1,9 +1,14 @@
-import type { Kategori, KategoriDto } from "@models/kategori.model";
+import type { DaftarKategori, Kategori, KategoriDto } from "@models/kategori.model";
 import * as kategoriRepo from "@repositories/kategori.repository";
 import { AppError } from "@utils/app-error";
 
 export async function getAllKategori(): Promise<Kategori[]> {
   return await kategoriRepo.findAllKategori();
+}
+
+// View untuk controller kategori (sudah termasuk agregat jumlah alat & stok).
+export async function getDaftarKategori(): Promise<DaftarKategori[]> {
+  return await kategoriRepo.findDaftarKategori();
 }
 
 export async function createKategori(data: KategoriDto): Promise<Kategori> {

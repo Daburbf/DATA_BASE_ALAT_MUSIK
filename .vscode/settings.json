@@ -1,0 +1,20 @@
+{
+  // Koneksi database untuk extension SQLTools (tanpa Docker).
+  // Password diambil dari variabel environment agar tidak tersimpan di git.
+  // Isi sekali di terminal VS Code:  $env:DB_PASSWORD="isi_password_db"
+  "sqltools.connections": [
+    {
+      "name": "toko-alat-musik (lokal)",
+      "driver": "PostgreSQL",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5433,
+      "database": "toko_alat_musik",
+      "username": "toko_user",
+      "password": "${env:DB_PASSWORD}",
+      "pgOptions": {
+        "ssl": false
+      }
+    }
+  ]
+}

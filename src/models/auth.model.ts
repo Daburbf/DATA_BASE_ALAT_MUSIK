@@ -1,3 +1,4 @@
+
 export type Role = "admin" | "pelanggan";
 
 export interface AuthUser {
@@ -33,4 +34,24 @@ export interface LoginResult {
     nama: string;
     role: Role;
   };
+}
+
+// Baris dari v_daftar_admin.
+export interface DaftarAdmin {
+  admin_id: number;
+  nama: string;
+  email: string;
+  created_at: Date;
+}
+
+// Baris dari v_daftar_pelanggan.
+export interface DaftarPelanggan {
+  pelanggan_id: number;
+  nama: string;
+  email: string;
+  telepon: string | null;
+  alamat: string | null;
+  created_at: Date;
+  jumlah_pembelian: number;
+  total_belanja: number;
 }

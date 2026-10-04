@@ -42,6 +42,27 @@ export async function getAlat(req: Request, res: Response): Promise<Response> {
   }
 }
 
+// GET /alat-musik/lengkap — admin saja, pecahan endpoint katalog publik.
+// Sumber: v_daftar_alat (ada stok_id & created_at).
+export async function getDaftarAlat(req: Request, res: Response): Promise<Response> {
+  try {
+    let kategoriId: number | undefined;
+
+    if (req.query.kategori_id !== undefined) {
+      const parsed = parseId(req.query.kategori_id);
+      if (parsed === null) {
+        return res.status(400).json({ success: false, message: "kategori_id harus berupa angka" });
+      }
+      kategoriId = parsed;
+    }
+
+    const data = await alatService.getDaftarAlat(kategoriId);
+    return res.status(200).json({ success: true, data });
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
 export async function getAlatById(req: Request, res: Response): Promise<Response> {
   try {
     const id = parseId(req.params.id);

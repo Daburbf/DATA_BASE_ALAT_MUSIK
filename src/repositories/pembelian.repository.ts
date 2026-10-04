@@ -2,6 +2,8 @@ import { pool } from "@config/db";
 import type {
   CheckoutItemDto,
   CheckoutResult,
+  DaftarPembelian,
+  DetailPembelian,
   RiwayatPembelian,
   StatusPembelian,
 } from "@models/pembelian.model";
@@ -11,13 +13,18 @@ export async function createCheckout(
   pelangganId: number,
   items: CheckoutItemDto[]
 ): Promise<CheckoutResult> {
-  const res = await pool.query<{ p_pembelian_id: number; p_total: number }>(
-    "CALL sp_checkout_pembelian($1, $2, NULL, NULL)",
+  // node-pg tidak mengembalikan rows untuk CALL dengan parameter OUT,
+  // maka dipakai wrapper FUNCTION yang me-return nilainya.
+  const res = await pool.query<{ pembelian_id: number; total: number }>(
+    "SELECT * FROM fn_checkout_pembelian($1, $2::jsonb)",
     [pelangganId, JSON.stringify(items)]
   );
 
-  const row = res.rows[0]!;
-  return { pembelian_id: row.p_pembelian_id, total: row.p_total };
+  const row = res.rows[0];
+  if (!row) {
+    throw new Error("Checkout gagal: database tidak mengembalikan hasil");
+  }
+  return { pembelian_id: row.pembelian_id, total: row.total };
 }
 
 export async function findRiwayatByPelanggan(pelangganId: number): Promise<RiwayatPembelian[]> {
@@ -30,6 +37,53 @@ export async function findRiwayatByPelanggan(pelangganId: number): Promise<Riway
 
 export async function findRiwayatSemua(): Promise<RiwayatPembelian[]> {
   const res = await pool.query<RiwayatPembelian>("SELECT * FROM v_riwayat_pembelian");
+  return res.rows;
+}
+
+// View pecahan untuk controller pembelian: header (satu baris per transaksi).
+export async function findDaftarPembelian(pelangganId?: number): Promise<DaftarPembelian[]> {
+  if (pelangganId !== undefined) {
+    const res = await pool.query<DaftarPembelian>(
+      "SELECT * FROM v_daftar_pembelian WHERE pelanggan_id = $1",
+      [pelangganId]
+    );
+    return res.rows;
+  }
+
+  const res = await pool.query<DaftarPembelian>("SELECT * FROM v_daftar_pembelian");
+  return res.rows;
+}
+
+// View pecahan untuk controller pembelian: detail flat per item.
+export async function findDetailPembelian(
+  pembelianId?: number,
+  pelangganId?: number
+): Promise<DetailPembelian[]> {
+  if (pembelianId !== undefined && pelangganId !== undefined) {
+    const res = await pool.query<DetailPembelian>(
+      "SELECT * FROM v_detail_pembelian WHERE pembelian_id = $1 AND pelanggan_id = $2",
+      [pembelianId, pelangganId]
+    );
+    return res.rows;
+  }
+
+  if (pembelianId !== undefined) {
+    const res = await pool.query<DetailPembelian>(
+      "SELECT * FROM v_detail_pembelian WHERE pembelian_id = $1",
+      [pembelianId]
+    );
+    return res.rows;
+  }
+
+  if (pelangganId !== undefined) {
+    const res = await pool.query<DetailPembelian>(
+      "SELECT * FROM v_detail_pembelian WHERE pelanggan_id = $1",
+      [pelangganId]
+    );
+    return res.rows;
+  }
+
+  const res = await pool.query<DetailPembelian>("SELECT * FROM v_detail_pembelian");
   return res.rows;
 }
 

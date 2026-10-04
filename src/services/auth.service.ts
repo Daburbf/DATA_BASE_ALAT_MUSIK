@@ -1,7 +1,13 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { jwtExpiresIn, jwtSecret } from "@config/jwt";
-import type { LoginDto, LoginResult, RegisterDto } from "@models/auth.model";
+import type {
+  DaftarAdmin,
+  DaftarPelanggan,
+  LoginDto,
+  LoginResult,
+  RegisterDto,
+} from "@models/auth.model";
 import * as authRepo from "@repositories/auth.repository";
 import { AppError } from "@utils/app-error";
 
@@ -33,4 +39,13 @@ export async function login(data: LoginDto): Promise<LoginResult> {
     token,
     akun: { id: akun.akun_id, nama: akun.nama, role: akun.role },
   };
+}
+
+// View untuk controller auth.
+export async function getDaftarAdmin(): Promise<DaftarAdmin[]> {
+  return await authRepo.findDaftarAdmin();
+}
+
+export async function getDaftarPelanggan(): Promise<DaftarPelanggan[]> {
+  return await authRepo.findDaftarPelanggan();
 }

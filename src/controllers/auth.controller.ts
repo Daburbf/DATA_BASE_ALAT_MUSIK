@@ -49,3 +49,23 @@ export async function login(req: Request, res: Response): Promise<Response> {
     return handleError(res, err);
   }
 }
+
+// GET /auth/admin — admin saja. Sumber: v_daftar_admin.
+export async function getDaftarAdmin(_req: Request, res: Response): Promise<Response> {
+  try {
+    const data = await authService.getDaftarAdmin();
+    return res.status(200).json({ success: true, data });
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
+// GET /auth/pelanggan — admin saja. Sumber: v_daftar_pelanggan.
+export async function getDaftarPelanggan(_req: Request, res: Response): Promise<Response> {
+  try {
+    const data = await authService.getDaftarPelanggan();
+    return res.status(200).json({ success: true, data });
+  } catch (err) {
+    return handleError(res, err);
+  }
+}

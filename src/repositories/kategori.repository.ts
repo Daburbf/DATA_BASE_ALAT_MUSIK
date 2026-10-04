@@ -1,8 +1,14 @@
 import { pool } from "@config/db";
-import type { Kategori, KategoriDto } from "@models/kategori.model";
+import type { DaftarKategori, Kategori, KategoriDto } from "@models/kategori.model";
 
 export async function findAllKategori(): Promise<Kategori[]> {
   const res = await pool.query<Kategori>("SELECT * FROM kategori ORDER BY id DESC");
+  return res.rows;
+}
+
+// View untuk controller kategori: daftar + agregat jumlah alat & stok.
+export async function findDaftarKategori(): Promise<DaftarKategori[]> {
+  const res = await pool.query<DaftarKategori>("SELECT * FROM v_daftar_kategori");
   return res.rows;
 }
 

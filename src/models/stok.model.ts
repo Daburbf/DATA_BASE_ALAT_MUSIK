@@ -11,3 +11,11 @@ export interface StokAlat {
   nama_admin: string | null;
   updated_at: Date;
 }
+
+// Baris tunggal dari v_ringkasan_stok.
+export interface RingkasanStok {
+  total_alat: number;
+  total_unit: number;
+  stok_kosong: number;
+  stok_menipis: number;
+}

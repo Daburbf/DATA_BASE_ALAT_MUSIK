@@ -45,6 +45,42 @@ export async function getRiwayatPembelian(req: Request, res: Response): Promise<
   }
 }
 
+// GET /pembelian/daftar — login. Sumber: v_daftar_pembelian (header per transaksi,
+// pecahan dari v_riwayat_pembelian yang merangkum rincian nested).
+export async function getDaftarPembelian(req: Request, res: Response): Promise<Response> {
+  try {
+    const data = await pembelianService.getDaftarPembelian(req.user!.id, req.user!.role);
+    return res.status(200).json({ success: true, data });
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
+// GET /pembelian/detail?pembelian_id= — login. Sumber: v_detail_pembelian (flat per item).
+// Pelanggan hanya melihat miliknya; admin boleh filter pembelian_id mana pun.
+export async function getDetailPembelian(req: Request, res: Response): Promise<Response> {
+  try {
+    let pembelianId: number | undefined;
+
+    if (req.query.pembelian_id !== undefined) {
+      const parsed = parseId(req.query.pembelian_id);
+      if (parsed === null) {
+        return res.status(400).json({ success: false, message: "pembelian_id harus berupa angka" });
+      }
+      pembelianId = parsed;
+    }
+
+    const data = await pembelianService.getDetailPembelian(
+      req.user!.id,
+      req.user!.role,
+      pembelianId
+    );
+    return res.status(200).json({ success: true, data });
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
 export async function ubahStatusPembelian(req: Request, res: Response): Promise<Response> {
   try {
     const pembelianId = parseId(req.params.id);

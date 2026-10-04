@@ -1,5 +1,5 @@
 import { pool } from "@config/db";
-import type { AlatDto, KatalogAlat } from "@models/alat.model";
+import type { AlatDto, DaftarAlat, KatalogAlat } from "@models/alat.model";
 
 export async function findKatalogAlat(kategoriId?: number): Promise<KatalogAlat[]> {
   if (kategoriId !== undefined) {
@@ -17,6 +17,20 @@ export async function findKatalogAlat(kategoriId?: number): Promise<KatalogAlat[
 export async function findAlatById(id: number): Promise<KatalogAlat | null> {
   const res = await pool.query<KatalogAlat>("SELECT * FROM v_katalog_alat WHERE alat_id = $1", [id]);
   return res.rows[0] ?? null;
+}
+
+// View untuk controller alat: daftar lengkap khas admin (ada stok_id & created_at).
+export async function findDaftarAlat(kategoriId?: number): Promise<DaftarAlat[]> {
+  if (kategoriId !== undefined) {
+    const res = await pool.query<DaftarAlat>(
+      "SELECT * FROM v_daftar_alat WHERE kategori_id = $1",
+      [kategoriId]
+    );
+    return res.rows;
+  }
+
+  const res = await pool.query<DaftarAlat>("SELECT * FROM v_daftar_alat");
+  return res.rows;
 }
 
 export async function insertAlat(data: AlatDto): Promise<number> {

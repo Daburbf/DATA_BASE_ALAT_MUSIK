@@ -1,4 +1,10 @@
-import type { AlatTerlaris, LaporanPenjualanBulanan, LogAktivitas } from "@models/laporan.model";
+import type {
+  AlatTerlaris,
+  LaporanPenjualanBulanan,
+  LogAktivitas,
+  PendapatanPerKategori,
+  PenjualanPerBulan,
+} from "@models/laporan.model";
 import * as laporanRepo from "@repositories/laporan.repository";
 
 export async function getPenjualanBulanan(
@@ -14,4 +20,20 @@ export async function getAlatTerlaris(): Promise<AlatTerlaris[]> {
 
 export async function getLogAktivitas(): Promise<LogAktivitas[]> {
   return await laporanRepo.findLogAktivitas();
+}
+
+// View pecahan untuk controller laporan.
+export async function getPendapatanPerKategori(): Promise<PendapatanPerKategori[]> {
+  return await laporanRepo.findPendapatanPerKategori();
+}
+
+export async function getPenjualanPerBulan(tahun?: number): Promise<PenjualanPerBulan[]> {
+  return await laporanRepo.findPenjualanPerBulan(tahun);
+}
+
+export async function getSemuaLogAktivitas(
+  sumber?: string,
+  limit?: number
+): Promise<LogAktivitas[]> {
+  return await laporanRepo.findSemuaLogAktivitas(sumber, limit);
 }

@@ -1,5 +1,5 @@
 import { pool } from "@config/db";
-import type { AkunLogin } from "@models/auth.model";
+import type { AkunLogin, DaftarAdmin, DaftarPelanggan } from "@models/auth.model";
 
 interface CreatePelangganData {
   nama: string;
@@ -14,9 +14,22 @@ export async function findAkunByEmail(email: string): Promise<AkunLogin | null> 
   return res.rows[0] ?? null;
 }
 
+// View untuk controller auth: daftar admin & pelanggan.
+export async function findDaftarAdmin(): Promise<DaftarAdmin[]> {
+  const res = await pool.query<DaftarAdmin>("SELECT * FROM v_daftar_admin");
+  return res.rows;
+}
+
+export async function findDaftarPelanggan(): Promise<DaftarPelanggan[]> {
+  const res = await pool.query<DaftarPelanggan>("SELECT * FROM v_daftar_pelanggan");
+  return res.rows;
+}
+
 export async function createPelanggan(data: CreatePelangganData): Promise<number> {
-  const res = await pool.query<{ p_pelanggan_id: number }>(
-    "CALL sp_registrasi_pelanggan($1, $2, $3, $4, $5, NULL)",
+  // node-pg tidak mengembalikan rows untuk CALL dengan parameter OUT,
+  // maka dipakai wrapper FUNCTION yang me-return nilainya.
+  const res = await pool.query<{ pelanggan_id: number }>(
+    "SELECT fn_registrasi_pelanggan($1, $2, $3, $4, $5) AS pelanggan_id",
     [
       data.nama,
       data.email,
@@ -26,5 +39,10 @@ export async function createPelanggan(data: CreatePelangganData): Promise<number
     ]
   );
 
-  return res.rows[0]!.p_pelanggan_id;
+  const pelangganId = res.rows[0]?.pelanggan_id;
+  if (pelangganId === undefined || pelangganId === null) {
+    throw new Error("Registrasi pelanggan gagal: database tidak mengembalikan id");
+  }
+
+  return pelangganId;
 }

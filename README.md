@@ -1,123 +1,147 @@
 # toko-alat-musik
 
-REST API toko alat musik. Stack: Bun, TypeScript, Express 5, PostgreSQL 16.
+REST API toko alat musik. Stack: Node.js + TypeScript (tsx), Express 5, PostgreSQL lokal (tanpa Docker).
 
 Logika bisnis (validasi stok, perhitungan total, perubahan status, audit) dijalankan di database lewat function, procedure, trigger, dan view. Lapisan aplikasi hanya memvalidasi input, memanggil objek database tersebut, dan memetakan error ke respons HTTP.
 
 ## Prasyarat
 
-- [Bun](https://bun.sh) 1.1 atau lebih baru
-- [Docker](https://docs.docker.com/get-docker/) dengan Docker Compose v2 (perintah `docker compose`)
+- [Node.js](https://nodejs.org) 20 atau lebih baru (sudah termasuk `npm`)
+- [PostgreSQL](https://www.postgresql.org/download/windows/) 16 atau lebih baru untuk Windows, **service-nya berjalan** (cek di `services.msc` → `postgresql-x64-18` = Running)
+- [VS Code](https://code.visualstudio.com/) + extension **SQLTools** dan **SQLTools PostgreSQL driver** (sudah direkomendasikan di `.vscode/extensions.json`)
 
-Instal Bun:
+Tidak butuh Docker, tidak butuh Bun. Semua perintah di bawah memakai `npm`.
 
-```bash
-# Linux / macOS
-curl -fsSL https://bun.sh/install | bash
+## Menjalankan Project (VS Code + PostgreSQL lokal)
 
-# Windows (PowerShell)
-powershell -c "irm bun.sh/install.ps1 | iex"
+### 1. Buka project di VS Code
+
+```cmd
+code "C:\Users\TUF GAMING\Downloads\toko-alat-musik"
 ```
 
-## Menjalankan Project
+Install extension yang disarankan saat VS Code menawarkannya (atau manual: `mtxr.sqltools` + `mtxr.sqltools-driver-pg`).
 
-### 1. Siapkan environment
+### 2. Siapkan environment
 
-```bash
-cp .env.example .env        # Windows (cmd): copy .env.example .env
+```cmd
+copy .env.example .env
 ```
 
-Buka `.env`, lalu ubah `DB_PASSWORD` dan `JWT_SECRET`. `JWT_SECRET` minimal 16 karakter. File `.env` dibaca oleh Docker Compose dan oleh aplikasi, jadi nilainya harus diisi sebelum langkah berikutnya.
+Buka `.env`, lalu ubah `DB_PASSWORD` (password untuk user `toko_user` yang akan dibuat otomatis) dan `JWT_SECRET` (minimal 16 karakter).
 
-### 2. Jalankan PostgreSQL dengan Docker CLI
+### 3. Setup database lokal (satu kali saja)
 
-```bash
-docker compose up -d
+```cmd
+npm install
+npm run db:setup
 ```
 
-Perintah ini mengunduh image, membuat container `toko_postgres` (database) dan `toko_adminer` (GUI database), lalu menjalankannya di latar belakang.
+Script ini memakai kode yang sudah ada — tidak mengubah cara aplikasi konek (`src/config/db.ts` tetap baca `DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME` dari `.env`). Yang dilakukan:
 
-Pastikan database sudah siap:
+1. Deteksi `psql.exe` instalasi PostgreSQL lokal.
+2. Minta password superuser `postgres` (diketik di terminal, tidak disimpan).
+3. Buat role `toko_user` + database `toko_alat_musik` (sesuai `.env`) bila belum ada.
+4. Aktifkan ekstensi `pgcrypto`.
+5. Menjalankan `npm run migrate` (tabel, function, procedure, trigger, view, seed, privilege) lalu verifikasi koneksi.
 
-```bash
-docker compose ps
+Cek koneksi kapan saja tanpa migrasi ulang:
+
+```cmd
+npm run db:ping
 ```
 
-Kolom `STATUS` pada `toko_postgres` harus `Up ... (healthy)`. Jika masih `(health: starting)`, tunggu beberapa detik lalu ulangi.
+### 4. Jalankan server
 
-Jika `docker compose` tidak dikenali, Docker Anda memakai Compose versi lama. Ganti dengan `docker-compose`.
-
-### 3. Instal dependency
-
-```bash
-bun install
+```cmd
+npm run dev
 ```
 
-### 4. Jalankan migrasi
-
-```bash
-bun run migrate
-```
-
-Migrasi membuat tabel, function, procedure, trigger, view, data awal, dan role database. Setiap file dijalankan dalam satu transaksi dan dicatat di tabel `schema_migrations`, jadi menjalankan perintah ini berulang kali aman: file yang sudah diterapkan dilewati.
-
-### 5. Jalankan server
-
-```bash
-bun run dev
-```
-
-Server berjalan di `http://localhost:3000`. Cek dengan:
-
-```bash
-curl http://localhost:3000/
-```
+Server berjalan di `http://localhost:3000`. Cek dengan membuka `http://localhost:3000/` di browser.
 
 Akun admin bawaan dari seed: `admin@tokomusik.com` dengan password `admin123`. Ganti password ini sebelum dipakai di luar lingkungan lokal.
 
-## Perintah Docker yang Sering Dipakai
+## Testing API — Wajib Postman (VS Code Extension, Tanpa Postman Desktop)
+
+Project ini **wajib memakai Postman**, dan dijalankan **langsung dari VS Code** lewat extension resmi — **tidak ada Postman desktop, tidak ada Bruno, tidak ada curl sebagai cara utama**. Semua endpoint sudah tersedia sebagai koleksi siap import.
+
+File yang dipakai:
+
+```
+toko-alat-musik-api/
+  toko-alat-musik-api.postman_collection.json       koleksi (6 folder: Auth, Kategori, Alat Musik, Stok, Pembelian, Laporan)
+  toko-alat-musik-local.postman_environment.json   environment Local (baseUrl, token, adminToken, pelangganToken)
+```
+
+### Langkah 1 — Install extension Postman di VS Code (satu kali)
+
+1. Buka VS Code di folder project ini.
+2. Tekan `Ctrl+Shift+X` → cari **Postman** → Install yang publisher-nya **Postman** (`postman.postman-for-vscode`).
+   - Extension ini sudah didaftarkan di `.vscode/extensions.json`, jadi VS Code otomatis menawarkannya sebagai workspace recommendation.
+3. Setelah install, ikon **Postman** muncul di activity bar (sidebar kiri). Login akun Postman bila diminta — koleksi tetap bisa dipakai lokal via Import file.
+4. **Tidak perlu install aplikasi Postman desktop** — semua request dijalankan dari panel Postman di dalam VS Code.
+
+### Langkah 2 — Import koleksi + environment (satu kali)
+
+1. Klik ikon **Postman** di activity bar → tab **Collections** → **Import**.
+2. Pilih file `toko-alat-musik-api/toko-alat-musik-api.postman_collection.json` → Import.
+3. Ulangi Import untuk `toko-alat-musik-api/toko-alat-musik-local.postman_environment.json`.
+4. Hasilnya: satu collection **toko-alat-musik-api** (6 folder) + satu environment **toko-alat-musik Local**.
+5. Pastikan server jalan (`npm run dev`), lalu di kanan atas panel Postman pilih environment **toko-alat-musik Local** (isinya `baseUrl = http://localhost:3000/api/v1`).
+
+### Langkah 3 — Ambil token (wajib sebelum request ber-auth)
+
+1. Buka folder **Auth** → jalankan **Login Admin** (`admin@tokomusik.com` / `admin123`).
+2. Token otomatis tersimpan ke variable `{{token}}` dan `{{adminToken}}` lewat script Tests — cek di tab Tests tiap request login.
+3. Semua request yang butuh login sudah memakai header `Authorization: Bearer {{token}}`, jadi tidak perlu copy-paste token manual.
+4. Untuk menguji sebagai pelanggan: `Auth → Register Pelanggan` → `Auth → Login Pelanggan` (menimpa `{{token}}`, cadangan tersimpan di `{{pelangganToken}}`).
+
+### Langkah 4 — Urutan test per peran
+
+- Publik (tanpa token): `Kategori → Get Kategori`, `Kategori → Get Daftar Kategori (agregat)`, `Alat Musik → Get Katalog`, `Get Katalog by Kategori`, `Get Detail Alat`.
+- Admin (login sebagai admin): `Kategori → Create/Update/Delete Kategori`, `Alat Musik → Get Daftar Lengkap (Admin)`, `Create/Update/Delete Alat`, seluruh folder **Stok**, seluruh folder **Laporan**, `Auth → Get Daftar Admin/Pelanggan`.
+- Pelanggan (login sebagai pelanggan): `Pembelian → Checkout` → `Get Riwayat` → `Get Daftar/Detail Pembelian` → `Ubah Status` (hanya ke `selesai`/`dibatalkan` untuk milik sendiri).
+- Admin untuk pembelian: `Get Riwayat`, `Get Daftar Pembelian`, `Get Detail by ID`, `Ubah Status` mengikuti alur `pending → diproses → dikirim → selesai` (bisa `dibatalkan` dari `pending`/`diproses`).
+
+Catatan: bila token kedaluwarsa (respons 401), ulangi Langkah 3 lalu kirim ulang request-nya.
+
+## Koneksi Database di VS Code (SQLTools)
+
+1. Di terminal VS Code, isi sekali per sesi: `$env:DB_PASSWORD="isi_password_db_sesuai_env"`.
+2. Buka panel SQLTools (ikon database di activity bar) → koneksi **toko-alat-musik (lokal)** → Connect.
+3. Query bisa ditulis di file `.sql` lalu Run, atau klik kanan tabel → Show Table Records.
+
+Koneksi tersimpan di `.vscode/settings.json` memakai `"password": "${env:DB_PASSWORD}"` sehingga password tidak ikut ke git.
+
+## Perintah yang Sering Dipakai
 
 | Tujuan | Perintah |
 | --- | --- |
-| Melihat log database | `docker compose logs -f postgres` |
-| Masuk ke psql | `docker exec -it toko_postgres psql -U toko_user -d toko_alat_musik` |
-| Menghentikan container (data tetap) | `docker compose stop` |
-| Menyalakan lagi | `docker compose start` |
-| Menghapus container (data tetap di volume) | `docker compose down` |
-| Menghapus container dan seluruh data | `docker compose down -v` |
+| Setup awal DB lokal | `npm run db:setup` |
+| Cek koneksi DB | `npm run db:ping` |
+| Migrasi saja | `npm run migrate` |
+| Jalankan server (watch) | `npm run dev` |
+| Jalankan server sekali | `npm start` |
+| Cek tipe TypeScript | `npm run typecheck` |
+| Masuk ke psql sebagai user aplikasi | `"C:\Program Files\PostgreSQL\18\bin\psql.exe" -h localhost -U toko_user -d toko_alat_musik` |
 
-Ganti `toko_user` dan `toko_alat_musik` jika Anda mengubah `DB_USER` atau `DB_NAME` di `.env`.
+Sesuaikan path `psql.exe` dengan versi PostgreSQL yang terinstal (`...\PostgreSQL\18\bin\...`).
 
-Mengulang dari database kosong:
+Mengulang dari database kosong (hati-hati, menghapus seluruh data):
 
-```bash
-docker compose down -v
-docker compose up -d
-bun run migrate
+```sql
+-- lewat psql superuser:
+DROP DATABASE toko_alat_musik;
 ```
 
-Adminer tersedia di `http://localhost:8080`. Isi form login: System `PostgreSQL`, Server `postgres`, serta Username, Password, dan Database sesuai `.env`.
-
-### Alternatif: docker run tanpa Compose
-
-Jika hanya membutuhkan database:
-
-```bash
-docker run -d --name toko_postgres \
-  -e POSTGRES_USER=toko_user \
-  -e POSTGRES_PASSWORD=ganti_password_ini \
-  -e POSTGRES_DB=toko_alat_musik \
-  -p 5432:5432 \
-  -v toko_postgres_data:/var/lib/postgresql/data \
-  postgres:16-alpine
-```
-
-Nilai user, password, dan database harus sama dengan `DB_USER`, `DB_PASSWORD`, dan `DB_NAME` di `.env`.
+lalu `npm run db:setup` lagi.
 
 ### Masalah umum
 
-- **`port is already allocated` pada 5432**: ada PostgreSQL lain yang memakai port itu. Ubah `DB_PORT` di `.env` (misalnya `5433`), lalu jalankan ulang `docker compose up -d`.
-- **`password authentication failed`**: volume lama masih menyimpan password sebelumnya. Jalankan `docker compose down -v`, lalu ulangi dari langkah 2.
+- **`password authentication failed` untuk user postgres**: password superuser salah. Itu password yang dimasukkan saat install PostgreSQL, bukan `DB_PASSWORD`.
+- **`password authentication failed` untuk toko_user**: `DB_PASSWORD` di `.env` berubah setelah `db:setup`. Jalankan `npm run db:setup` lagi agar password role ikut diperbarui.
+- **Service PostgreSQL tidak jalan**: buka `services.msc`, start `postgresql-x64-18`.
+- **`port is already allocated` / konek ke server yang salah**: ada 2 PostgreSQL (Docker + lokal). Hentikan container Docker (`docker compose down`) atau ubah `DB_PORT` di `.env`.
 - **`Environment variable DB_USER wajib diisi`**: file `.env` belum dibuat atau belum lengkap.
 
 ## Struktur Project

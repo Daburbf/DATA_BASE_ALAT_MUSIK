@@ -1,0 +1,534 @@
+{
+  "info": {
+    "name": "toko-alat-musik-api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "REST API toko alat musik — dipakai dari Postman VS Code extension (Postman.postman-for-vscode).\n\nCara pakai:\n1. Install extension Postman di VS Code, buka ikon Postman di activity bar -> Import -> pilih file ini.\n2. Aktifkan environment \"toko-alat-musik Local\" (atau pakai variable bawaan collection).\n3. Jalankan \"Auth -> Login Admin\" atau \"Login Pelanggan\" dulu — token otomatis tersimpan ke variable {{token}}.\n4. Request lain yang butuh login sudah memakai header Authorization: Bearer {{token}}.\n\nBase URL default: http://localhost:3000/api/v1 (server via `npm run dev`)."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+    { "key": "token", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "pelangganToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Pelanggan",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Siti\",\n  \"email\": \"siti@mail.com\",\n  \"password\": \"rahasia123\",\n  \"telepon\": \"081234567890\",\n  \"alamat\": \"Jl. Merdeka No. 1\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Publik. Daftar pelanggan baru. Password 8-72 karakter."
+          },
+          "response": []
+        },
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('token', json.data.token);",
+                  "    try { pm.environment.set('token', json.data.token); } catch (e) {}",
+                  "    pm.collectionVariables.set('adminToken', json.data.token);",
+                  "    try { pm.environment.set('adminToken', json.data.token); } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@tokomusik.com\",\n  \"password\": \"admin123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Publik. Login admin seed. Token otomatis disimpan ke {{token}} dan {{adminToken}} via Tests."
+          },
+          "response": []
+        },
+        {
+          "name": "Login Pelanggan",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('token', json.data.token);",
+                  "    try { pm.environment.set('token', json.data.token); } catch (e) {}",
+                  "    pm.collectionVariables.set('pelangganToken', json.data.token);",
+                  "    try { pm.environment.set('pelangganToken', json.data.token); } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"siti@mail.com\",\n  \"password\": \"rahasia123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Publik. Login pelanggan (sesuaikan dengan hasil register). Token otomatis disimpan ke {{token}} dan {{pelangganToken}}."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Daftar Admin",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/admin", "host": ["{{baseUrl}}"], "path": ["auth", "admin"] },
+            "description": "Admin saja. Sumber: v_daftar_admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Daftar Pelanggan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/pelanggan", "host": ["{{baseUrl}}"], "path": ["auth", "pelanggan"] },
+            "description": "Admin saja. Sumber: v_daftar_pelanggan."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Kategori",
+      "item": [
+        {
+          "name": "Get Kategori",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/kategori", "host": ["{{baseUrl}}"], "path": ["kategori"] },
+            "description": "Publik. Daftar kategori."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Daftar Kategori (agregat)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/kategori/daftar", "host": ["{{baseUrl}}"], "path": ["kategori", "daftar"] },
+            "description": "Publik. Sumber: v_daftar_kategori (jumlah alat & stok)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Kategori",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/kategori", "host": ["{{baseUrl}}"], "path": ["kategori"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama_kategori\": \"Efek Gitar\",\n  \"deskripsi\": \"Pedal efek dan aksesoris gitar\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Admin saja."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Kategori",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/kategori/1", "host": ["{{baseUrl}}"], "path": ["kategori", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama_kategori\": \"Gitar\",\n  \"deskripsi\": \"Gitar akustik, elektrik, dan ukulele\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Admin saja."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Kategori",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/kategori/99", "host": ["{{baseUrl}}"], "path": ["kategori", "99"] },
+            "description": "Admin saja. Ganti 99 dengan id kategori yang aman dihapus."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Alat Musik",
+      "item": [
+        {
+          "name": "Get Katalog",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/alat-musik", "host": ["{{baseUrl}}"], "path": ["alat-musik"] },
+            "description": "Publik. Katalog beserta stok."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Katalog by Kategori",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/alat-musik?kategori_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["alat-musik"],
+              "query": [{ "key": "kategori_id", "value": "1" }]
+            },
+            "description": "Publik. Filter ?kategori_id=."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Daftar Lengkap (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/alat-musik/lengkap", "host": ["{{baseUrl}}"], "path": ["alat-musik", "lengkap"] },
+            "description": "Admin saja. Sumber: v_daftar_alat (ada stok_id & created_at)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Detail Alat",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/alat-musik/1", "host": ["{{baseUrl}}"], "path": ["alat-musik", "1"] },
+            "description": "Publik. Detail satu alat musik."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Alat",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/alat-musik", "host": ["{{baseUrl}}"], "path": ["alat-musik"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kategori_id\": 1,\n  \"nama_alat\": \"Gitar Klasik\",\n  \"deskripsi\": \"Senar nilon\",\n  \"harga\": 1250000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Admin saja. Stok awal 0 dibuat otomatis oleh trigger."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Alat",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/alat-musik/1", "host": ["{{baseUrl}}"], "path": ["alat-musik", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kategori_id\": 1,\n  \"nama_alat\": \"Gitar Klasik Updated\",\n  \"deskripsi\": \"Senar nilon\",\n  \"harga\": 1350000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Admin saja."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Alat",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/alat-musik/99", "host": ["{{baseUrl}}"], "path": ["alat-musik", "99"] },
+            "description": "Admin saja. Gagal jika alat sudah pernah terjual (trigger trg_cegah_hapus_alat_terjual)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stok",
+      "item": [
+        {
+          "name": "Get Stok",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/stok", "host": ["{{baseUrl}}"], "path": ["stok"] },
+            "description": "Admin saja. Daftar stok."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Ringkasan Stok",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/stok/ringkasan", "host": ["{{baseUrl}}"], "path": ["stok", "ringkasan"] },
+            "description": "Admin saja. Sumber: v_ringkasan_stok."
+          },
+          "response": []
+        },
+        {
+          "name": "Tambah Stok",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/stok", "host": ["{{baseUrl}}"], "path": ["stok"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alat_id\": 1,\n  \"jumlah\": 10\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Admin saja. Tambah stok satu alat."
+          },
+          "response": []
+        },
+        {
+          "name": "Tambah Stok Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/stok/batch", "host": ["{{baseUrl}}"], "path": ["stok", "batch"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"alat_id\": 1, \"jumlah\": 5 },\n    { \"alat_id\": 2, \"jumlah\": 3 }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Admin saja. Semua berhasil atau tidak sama sekali (transaksi). Maks 100 item."
+          },
+          "response": []
+        },
+        {
+          "name": "Ubah Stok",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/stok/1", "host": ["{{baseUrl}}"], "path": ["stok", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jumlah\": 20\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Admin saja. Set jumlah stok. :id adalah stok_id (lihat dari GET /stok)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pembelian",
+      "item": [
+        {
+          "name": "Checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/pembelian", "host": ["{{baseUrl}}"], "path": ["pembelian"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"barang\": [\n    { \"alat_id\": 1, \"jumlah\": 2 },\n    { \"alat_id\": 3, \"jumlah\": 1 }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Pelanggan saja (role pelanggan). Maks 50 item."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Riwayat",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/pembelian", "host": ["{{baseUrl}}"], "path": ["pembelian"] },
+            "description": "Login. Pelanggan: riwayat sendiri. Admin: semua pembelian."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Daftar Pembelian",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/pembelian/daftar", "host": ["{{baseUrl}}"], "path": ["pembelian", "daftar"] },
+            "description": "Login. Sumber: v_daftar_pembelian (header per transaksi)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Detail Pembelian",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/pembelian/detail", "host": ["{{baseUrl}}"], "path": ["pembelian", "detail"] },
+            "description": "Login. Sumber: v_detail_pembelian (flat per item)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Detail by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/pembelian/detail?pembelian_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["pembelian", "detail"],
+              "query": [{ "key": "pembelian_id", "value": "1" }]
+            },
+            "description": "Login. Pelanggan hanya melihat miliknya; admin boleh filter id mana pun."
+          },
+          "response": []
+        },
+        {
+          "name": "Ubah Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/pembelian/1/status", "host": ["{{baseUrl}}"], "path": ["pembelian", "1", "status"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status_pembelian\": \"diproses\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Login. Alur: pending -> diproses -> dikirim -> selesai. Bisa dibatalkan dari pending/diproses. Admin: semua transisi valid. Pelanggan: hanya miliknya menjadi selesai/dibatalkan."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Laporan",
+      "item": [
+        {
+          "name": "Penjualan Bulanan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/laporan/penjualan-bulanan?bulan=10&tahun=2026",
+              "host": ["{{baseUrl}}"],
+              "path": ["laporan", "penjualan-bulanan"],
+              "query": [
+                { "key": "bulan", "value": "10" },
+                { "key": "tahun", "value": "2026" }
+              ]
+            },
+            "description": "Admin saja. Default bulan berjalan bila query dikosongkan."
+          },
+          "response": []
+        },
+        {
+          "name": "Penjualan Per Bulan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/laporan/penjualan-per-bulan?tahun=2026",
+              "host": ["{{baseUrl}}"],
+              "path": ["laporan", "penjualan-per-bulan"],
+              "query": [{ "key": "tahun", "value": "2026" }]
+            },
+            "description": "Admin saja. Sumber: v_penjualan_per_bulan."
+          },
+          "response": []
+        },
+        {
+          "name": "Alat Terlaris",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/laporan/alat-terlaris", "host": ["{{baseUrl}}"], "path": ["laporan", "alat-terlaris"] },
+            "description": "Admin saja. Hanya pembelian berstatus selesai."
+          },
+          "response": []
+        },
+        {
+          "name": "Pendapatan Per Kategori",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/laporan/pendapatan-per-kategori", "host": ["{{baseUrl}}"], "path": ["laporan", "pendapatan-per-kategori"] },
+            "description": "Admin saja. Sumber: v_pendapatan_per_kategori."
+          },
+          "response": []
+        },
+        {
+          "name": "Log Aktivitas (100 terbaru)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/laporan/log-aktivitas", "host": ["{{baseUrl}}"], "path": ["laporan", "log-aktivitas"] },
+            "description": "Admin saja. 100 log terbaru."
+          },
+          "response": []
+        },
+        {
+          "name": "Log Aktivitas Semua",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/laporan/log-aktivitas/semua?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["laporan", "log-aktivitas", "semua"],
+              "query": [{ "key": "limit", "value": "20" }]
+            },
+            "description": "Admin saja. Sumber: v_log_aktivitas. Filter opsional ?sumber=, limit 1-500."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
