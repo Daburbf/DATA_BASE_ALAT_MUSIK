@@ -7,6 +7,7 @@ import type {
   LoginDto,
   LoginResult,
   RegisterDto,
+  Role,
 } from "@models/auth.model";
 import * as authRepo from "@repositories/auth.repository";
 import { AppError } from "@utils/app-error";
@@ -39,6 +40,10 @@ export async function login(data: LoginDto): Promise<LoginResult> {
     token,
     akun: { id: akun.akun_id, nama: akun.nama, role: akun.role },
   };
+}
+
+export async function deletePelanggan(pelangganId: number, akunId: number, role: Role): Promise<void> {
+  await authRepo.deletePelanggan(pelangganId, akunId, role);
 }
 
 // View untuk controller auth.

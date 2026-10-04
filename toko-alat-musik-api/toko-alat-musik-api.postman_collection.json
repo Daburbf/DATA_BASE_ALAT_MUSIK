@@ -94,6 +94,26 @@
           "response": []
         },
         {
+          "name": "Delete Akun Sendiri",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] },
+            "description": "Pelanggan saja. Hapus akun sendiri. Gagal 409 bila masih punya riwayat pembelian."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Akun Pelanggan (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/pelanggan/99", "host": ["{{baseUrl}}"], "path": ["auth", "pelanggan", "99"] },
+            "description": "Admin saja. Ganti 99 dengan id pelanggan. Gagal 409 bila pelanggan punya riwayat pembelian."
+          },
+          "response": []
+        },
+        {
           "name": "Get Daftar Admin",
           "request": {
             "method": "GET",

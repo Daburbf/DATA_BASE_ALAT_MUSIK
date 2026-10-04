@@ -25,6 +25,10 @@ export async function findDaftarPelanggan(): Promise<DaftarPelanggan[]> {
   return res.rows;
 }
 
+export async function deletePelanggan(pelangganId: number, akunId: number, role: string): Promise<void> {
+  await pool.query("CALL sp_hapus_pelanggan($1, $2, $3)", [pelangganId, akunId, role]);
+}
+
 export async function createPelanggan(data: CreatePelangganData): Promise<number> {
   // node-pg tidak mengembalikan rows untuk CALL dengan parameter OUT,
   // maka dipakai wrapper FUNCTION yang me-return nilainya.

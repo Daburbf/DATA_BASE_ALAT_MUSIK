@@ -12,7 +12,8 @@ const migrationFiles = [
    "src/database/migrations/20261001_seed_toko_data.sql",
    "src/database/migrations/20261001_create_toko_privileges.sql",
    "src/database/migrations/20261002_fix_out_params.sql",
-   "src/database/migrations/20261003_controller_views.sql"
+   "src/database/migrations/20261003_controller_views.sql",
+   "src/database/migrations/20261004_hapus_akun_pelanggan.sql"
 ];
 
 async function migrate() {

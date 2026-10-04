@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import * as authService from "@services/auth.service";
-import { handleError, isNonEmptyString } from "@utils/http";
+import { handleError, isNonEmptyString, parseId } from "@utils/http";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -45,6 +45,34 @@ export async function login(req: Request, res: Response): Promise<Response> {
 
     const result = await authService.login({ email, password });
     return res.status(200).json({ success: true, message: "Login berhasil", data: result });
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
+// DELETE /auth/me — pelanggan menghapus akunnya sendiri.
+// Ditolak (409) bila akun masih memiliki riwayat pembelian.
+export async function deleteAkunSendiri(req: Request, res: Response): Promise<Response> {
+  try {
+    await authService.deletePelanggan(req.user!.id, req.user!.id, req.user!.role);
+    return res.status(200).json({ success: true, message: "Akun berhasil dihapus" });
+  } catch (err) {
+    return handleError(res, err);
+  }
+}
+
+// DELETE /auth/pelanggan/:id — admin menghapus akun pelanggan mana pun.
+// Ditolak (409) bila pelanggan masih memiliki riwayat pembelian.
+export async function deletePelanggan(req: Request, res: Response): Promise<Response> {
+  try {
+    const id = parseId(req.params.id);
+
+    if (id === null) {
+      return res.status(400).json({ success: false, message: "ID pelanggan tidak valid" });
+    }
+
+    await authService.deletePelanggan(id, req.user!.id, req.user!.role);
+    return res.status(200).json({ success: true, message: "Akun pelanggan berhasil dihapus" });
   } catch (err) {
     return handleError(res, err);
   }

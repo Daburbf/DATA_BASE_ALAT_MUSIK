@@ -189,6 +189,8 @@ Prefix: `/api/v1`. Autentikasi memakai header `Authorization: Bearer <token>` da
 | --- | --- | --- | --- |
 | POST | `/auth/register` | Publik | Daftar pelanggan |
 | POST | `/auth/login` | Publik | Login admin atau pelanggan |
+| DELETE | `/auth/me` | Pelanggan | Hapus akun sendiri (ditolak bila punya riwayat pembelian) |
+| DELETE | `/auth/pelanggan/:id` | Admin | Hapus akun pelanggan (ditolak bila punya riwayat pembelian) |
 | GET | `/kategori` | Publik | Daftar kategori |
 | POST | `/kategori` | Admin | Tambah kategori |
 | PUT | `/kategori/:id` | Admin | Ubah kategori |
